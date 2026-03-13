@@ -438,21 +438,23 @@ def disegna_griglia():
 # ============================================================
 # TESTATA — q_title.png su tutte le schermate
 # ============================================================
+
 import os
 
 def mostra_testata():
-    # Definiamo il percorso in modo che sia a prova di bomba
-    percorso_immagine = os.path.join(os.path.dirname(__file__), "q_title.png")
-    
-    if os.path.exists(percorso_immagine):
-        st.image(percorso_immagine, use_container_width=True)
-    else:
-        # Se l'immagine non c'è, l'app NON crasha più, ma ti avvisa
-        st.warning("⚠️ Logo 'q_title.png' non trovato nel server.")
-        st.info(f"Percorso cercato: {percorso_immagine}")
-        # DEBUG: vedrai nei log di Koyeb cosa c'è davvero in quella cartella
-        print("File trovati in directory:", os.listdir(os.path.dirname(__file__)))
+    # Percorso assoluto dinamico per il server
+    percorso_base = os.path.dirname(__file__)
+    percorso_logo = os.path.join(percorso_base, "q_title.png")
 
+    if os.path.exists(percorso_logo):
+        # Usiamo use_column_width per compatibilità con tutte le versioni di Streamlit
+        st.image(percorso_logo, use_column_width=True)
+    else:
+        # Se l'immagine manca, mostriamo un titolo testuale invece di crashare
+        st.markdown("<h1 style='text-align: center;'>🚀 SPACE WEB</h1>", unsafe_allow_html=True)
+        # Log silenzioso nel server (non visibile agli utenti)
+        print(f"Nota: Logo non trovato in {percorso_logo}. Uso titolo testuale.")
+        
 # ============================================================
 # SCHERMATA LOGIN
 # ============================================================
@@ -576,7 +578,7 @@ def schermata_gioco():
 
     with col_mappa:
         buf = disegna_griglia()
-        st.image(buf, use_container_width=True)
+        st.image(buf, use_column_width=True)
 
     with col_ctrl:
         # Energia
