@@ -169,12 +169,28 @@ def db_carica() -> pd.DataFrame:
 
 def db_salva_utente(row: dict):
     """Inserisce o aggiorna un utente su Supabase (upsert)."""
+    
+    # --- DEBUG POTENZIATO ---
+    raw_key = os.environ.get('SUPABASE_KEY', 'NON TROVATA')
+    raw_url = os.environ.get('SUPABASE_URL', 'NON TROVATA')
+    
+    # Stampiamo informazioni utili senza rivelare tutta la chiave
+    st.write(f"🔍 DEBUG - URL: {raw_url}")
+    st.write(f"🔍 DEBUG - Lunghezza Chiave: {len(raw_key)} caratteri")
+    st.write(f"🔍 DEBUG - Inizio Chiave: {raw_key[:15]}...") 
+    
+    # Controllo rapido per errori comuni
+    if '"' in raw_key or "'" in raw_key:
+        st.error("🚨 ATTENZIONE: La chiave contiene virgolette extra!")
+    if raw_key.endswith(' '):
+        st.error("🚨 ATTENZIONE: C'è uno spazio vuoto alla fine della chiave!")
+    # --- FINE DEBUG ---
+
     try:
         sb = get_supabase()
         sb.table("utenti").upsert(row, on_conflict="nome").execute()
     except Exception as e:
         st.warning(f"⚠️ Errore salvataggio Supabase: {e}")
-
 # ============================================================
 # SAGOME ASTRONAVI
 # ============================================================
