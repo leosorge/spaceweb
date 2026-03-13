@@ -387,13 +387,20 @@ def disegna_griglia():
     ax.tick_params(colors='#556688', labelsize=7)
     ax.grid(True, linestyle='-', linewidth=0.4, alpha=0.4, color='#223355')
 
-    # Immagine di sfondo
-    bg_path = "p_background.png"
+    # Percorso assoluto sicuro per lo sfondo del grafico
+    percorso_base = os.path.dirname(__file__)
+    bg_path = os.path.join(percorso_base, "q_background.png")
+
     if os.path.exists(bg_path):
         import matplotlib.image as mpimg
-        img = mpimg.imread(bg_path)
-        ax.imshow(img, extent=[-0.5,9.5,-0.5,9.5], alpha=0.75)
-
+        try:
+            img = mpimg.imread(bg_path)
+            ax.imshow(img, extent=[-0.5, 9.5, -0.5, 9.5], alpha=0.75)
+        except Exception as e:
+            print(f"Errore nel caricamento dell'immagine con mpimg: {e}")
+    else:
+        # Questo apparirà nei log di Koyeb se l'immagine non viene trovata
+        print(f"AVVISO: Sfondo grafico non trovato in {bg_path}")
     # Elementi
     for ox,oy in ss.l:   ax.plot(ox,oy,'ro',markersize=11,zorder=3)
     for bx,by in ss.q:   ax.plot(bx,by,'go',markersize=11,zorder=3)
@@ -431,11 +438,20 @@ def disegna_griglia():
 # ============================================================
 # TESTATA — q_title.png su tutte le schermate
 # ============================================================
+import os
+
 def mostra_testata():
-    if os.path.exists("q_title.png"):
-        st.image("q_title.png", use_container_width=True)
+    # Definiamo il percorso in modo che sia a prova di bomba
+    percorso_immagine = os.path.join(os.path.dirname(__file__), "q_title.png")
+    
+    if os.path.exists(percorso_immagine):
+        st.image(percorso_immagine, use_container_width=True)
     else:
-        st.markdown("<h1>🚀 SPACE WEB</h1>", unsafe_allow_html=True)
+        # Se l'immagine non c'è, l'app NON crasha più, ma ti avvisa
+        st.warning("⚠️ Logo 'q_title.png' non trovato nel server.")
+        st.info(f"Percorso cercato: {percorso_immagine}")
+        # DEBUG: vedrai nei log di Koyeb cosa c'è davvero in quella cartella
+        print("File trovati in directory:", os.listdir(os.path.dirname(__file__)))
 
 # ============================================================
 # SCHERMATA LOGIN
