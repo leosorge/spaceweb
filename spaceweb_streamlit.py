@@ -482,9 +482,12 @@ def aggiorna_punteggio(nome_utente, quale, valore):
     total = sum(int(float(db.at[idx, f"punteggio{i}"])) for i in range(1, 8) if f"punteggio{i}" in db.columns)
     db.at[idx, "ww"] = int(total)
     st.session_state.db = db
-    row = db.loc[idx].to_dict()
+   row = db.loc[idx].to_dict()
     # [SUPABASE] Sincronizza la riga aggiornata su Supabase dopo ogni modifica ai punteggi
-    def db_salva_utente(row: dict):
+    db_salva_utente(row)
+
+
+def db_salva_utente(row: dict):
     try:
         sb = get_supabase()
         # Converti tutti i valori numerici in int puro per Supabase
