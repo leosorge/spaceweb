@@ -479,12 +479,24 @@ def aggiorna_punteggio(nome_utente, quale, valore):
     db.loc[mask, col_p] = valore
     db.loc[mask, col_d] = datetime.today().strftime("%d/%m/%y")
     idx = db.index[mask][0]
-    total = sum(int(db.at[idx, f"punteggio{i}"]) for i in range(1, 8) if f"punteggio{i}" in db.columns)
-    db.at[idx, "ww"] = total
+    total = sum(int(float(db.at[idx, f"punteggio{i}"])) for i in range(1, 8) if f"punteggio{i}" in db.columns)
+db.at[idx, "ww"] = int(total)
     st.session_state.db = db
     row = db.loc[idx].to_dict()
     # [SUPABASE] Sincronizza la riga aggiornata su Supabase dopo ogni modifica ai punteggi
-    db_salva_utente(row)
+    def db_salva_utente(row: dict):
+    try:
+        sb = get_supabase()
+        # Converti tutti i valori numerici in int puro per Supabase
+        row_clean = {}
+        for k, v in row.items():
+            if isinstance(v, float):
+                row_clean[k] = int(v)
+            else:
+                row_clean[k] = v
+        sb.table("utenti").upsert(row_clean, on_conflict="nome").execute()
+    except Exception as e:
+        st.warning(f"⚠️ Errore salvataggio Supabase: {e}")
 
 def genera_frase_adams():
     try:
