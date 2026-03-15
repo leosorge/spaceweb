@@ -23,7 +23,7 @@ from supabase import create_client, Client
 # CONFIGURAZIONE PAGINA
 # ============================================================
 st.set_page_config(
-    page_title="🚀 Space Web",
+    page_title="Space Web",
     page_icon="🚀",
     layout="wide",
     initial_sidebar_state="collapsed"
