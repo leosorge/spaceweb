@@ -1,0 +1,31 @@
+body {
+    background: radial-gradient(circle at 20% 20%, #0b0f1a, #000000);
+    color: #ffffff;
+    font-family: "Orbitron", sans-serif;
+}
+
+h1, h2, h3 {
+    color: #5BC0EB;
+}
+
+.stButton>button {
+    background-color: #1C2541;
+    color: white;
+    border-radius: 8px;
+    border: 1px solid #5BC0EB;
+}
+
+.stButton>button:hover {
+    background-color: #5BC0EB;
+    color: black;
+}
+
+.block-container {
+    padding-top: 2rem;
+}
+
+.space-panel {
+    background-color: #1C2541;
+    padding: 15px;
+    border-radius: 10px;
+}
