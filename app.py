@@ -1,0 +1,1 @@
+from config import SUPABASE_URL, SUPABASE_KEY, REGOLO_API_KEY
