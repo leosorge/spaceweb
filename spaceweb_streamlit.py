@@ -113,8 +113,8 @@ st.markdown("""
         height: 1px;
         background: linear-gradient(90deg, transparent, rgba(255,215,0,0.6), transparent);
     }
-    .metric-label { color: #6688aa; font-size: 0.65rem; letter-spacing: 3px; margin-bottom: 2px; }
-    .metric-value { color: #FFD700; font-size: 1.3rem; font-weight: 900; }
+    .metric-label { color: #6688aa; font-size: 0.80rem; letter-spacing: 3px; margin-bottom: 2px; }
+    .metric-value { color: #FFD700; font-size: 1.5rem; font-weight: 900; }
     .metric-value.danger { color: #ff4444; text-shadow: 0 0 8px rgba(255,80,80,0.6); }
     .metric-value.warning { color: #ffaa00; }
     .metric-value.good { color: #00ff88; }
@@ -158,7 +158,7 @@ st.markdown("""
         border-radius: 3px;
         padding: 10px 12px;
         min-height: 50px;
-        font-size: 0.8rem;
+        font-size: 0.95rem;
         color: #99bbdd;
         margin-top: 6px;
         font-family: 'Share Tech Mono', monospace;
@@ -166,39 +166,35 @@ st.markdown("""
     .msg-box.danger { border-left-color: #ff4444; color: #ffaaaa; }
     .msg-box.success { border-left-color: #00ff88; color: #aaffcc; }
 
-    /* Oracolo / Starfleet Communications */
+    /* Oracolo */
     .oracolo-box {
-        background: rgba(255,215,0,0.07);
-        border: 2px solid rgba(255,215,0,0.35);
-        border-radius: 6px;
-        padding: 16px 18px;
-        min-height: 80px;
-        font-size: 1.0rem;
-        color: #ffe88a;
-        margin-top: 6px;
+        background: rgba(255,215,0,0.04);
+        border: 1px solid rgba(255,215,0,0.15);
+        border-radius: 4px;
+        padding: 10px 12px;
+        min-height: 55px;
+        font-size: 0.78rem;
+        color: #ddcc66;
+        margin-top: 4px;
         font-style: italic;
         font-family: 'Rajdhani', sans-serif;
         letter-spacing: 0.5px;
-        line-height: 1.6;
-        box-shadow: 0 0 14px rgba(255,215,0,0.1), inset 0 0 10px rgba(255,215,0,0.04);
+        line-height: 1.5;
     }
     .oracolo-title {
-        color: #FFD700;
+        color: rgba(255,215,0,0.6);
         font-family: 'Orbitron', monospace;
-        font-size: 0.7rem;
-        letter-spacing: 4px;
-        margin-bottom: 5px;
-        text-shadow: 0 0 8px rgba(255,215,0,0.5);
+        font-size: 0.6rem;
+        letter-spacing: 3px;
+        margin-bottom: 3px;
     }
     /* [STARFLEET: ENERGIA BASSA] sfondo rosso per avviso energia */
     .oracolo-box.alert {
-        background: rgba(180,20,20,0.35);
-        border: 2px solid rgba(255,80,80,0.7);
-        color: #ffcccc;
+        background: rgba(180,20,20,0.25);
+        border-color: rgba(255,80,80,0.5);
+        color: #ffaaaa;
         font-style: normal;
         font-weight: bold;
-        font-size: 1.05rem;
-        box-shadow: 0 0 18px rgba(255,60,60,0.25), inset 0 0 12px rgba(255,60,60,0.08);
     }
 
     /* Quiz */
@@ -266,7 +262,7 @@ st.markdown("""
     /* Section divider */
     .section-title {
         font-family: 'Orbitron', monospace;
-        font-size: 0.65rem;
+        font-size: 0.80rem;
         letter-spacing: 4px;
         color: rgba(100,160,255,0.5);
         text-transform: uppercase;
@@ -450,6 +446,8 @@ def init_state():
         st.session_state.cnt_oracolo  = 0
         st.session_state.msg          = ""
         st.session_state.oracolo_txt  = "🌌 In attesa di saggezza cosmica..."
+        st.session_state.tempesta_pending = None   # [STARFLEET: TEMPESTA] nessuna tempesta in attesa
+        st.session_state.starfleet_alert  = False  # [STARFLEET: ENERGIA BASSA] flag sfondo rosso
         st.session_state.starfleet_alert = False  # [STARFLEET: ENERGIA BASSA] flag sfondo rosso
         # [SUPABASE] Carica l'elenco utenti da Supabase all'avvio dell'app.
         # Il DataFrame viene tenuto in session_state come cache locale per
@@ -549,11 +547,10 @@ def nuova_partita(nome):
     st.session_state.pos_nemica  = [9, 0]
     st.session_state.cnt_mosse   = 0
     st.session_state.cnt_oracolo = 0
-    st.session_state.msg              = ""
-    # [STARFLEET: BENVENUTO] messaggio iniziale nella finestra comunicazioni
-    st.session_state.oracolo_txt      = f"🚀 Benvenuto {nome}! Attenzione alla nave rossa. Scudo al 50%. Buona fortuna, comandante."
-    st.session_state.starfleet_alert  = False
+    st.session_state.msg         = f"Benvenuto {nome}! ⚠️ Attenzione alla nave rossa! Scudo al 50%."
     st.session_state.starfleet_alert = False  # [STARFLEET: ENERGIA BASSA] reset
+    st.session_state.tempesta_pending = None   # [STARFLEET: TEMPESTA] reset
+    st.session_state.starfleet_alert  = False  # [STARFLEET: ENERGIA BASSA] reset
     st.session_state.schermata   = "gioco"
 
 def esegui_mossa(dx, dy):
@@ -618,12 +615,18 @@ def esegui_mossa(dx, dy):
                     msg += f"💥 Catturato! -{danno_nemico} energia (scudo esaurito). "
                 ss.w -= danno_nemico
 
-            # Esplosione 30%
-            if random.random() < 0.30:
-                forma = random.choice(['punto','croce'])
-                ex, ey = random.randint(0,9), random.randint(0,9)
+            # ── [STARFLEET: TEMPESTA] Tempesta magnetica a 2 fasi ──────────
+            # Fase A (questa mossa): sorteggia centro, avvisa Starfleet,
+            #         salva in tempesta_pending — NON colpisce ancora.
+            # Fase B (mossa successiva): esplode sul centro salvato.
+            # Probabilità sorteggio: 30% per mossa.
+
+            if ss.get("tempesta_pending") is not None:
+                # FASE B — la tempesta annunciata la mossa prima colpisce ora
+                ex, ey = ss.tempesta_pending
+                forma = random.choice(['punto', 'croce'])
                 if forma == 'punto':
-                    ss.esplosione = [(ex,ey)]
+                    ss.esplosione = [(ex, ey)]
                 else:
                     ss.esplosione = [(ex,ey),(ex-1,ey),(ex+1,ey),(ex,ey-1),(ex,ey+1)]
                     ss.esplosione = [(x,y) for x,y in ss.esplosione if 0<=x<=9 and 0<=y<=9]
@@ -632,12 +635,24 @@ def esegui_mossa(dx, dy):
                         assorbito = min(ss.scudo, ss.w // 4)
                         ss.scudo -= assorbito
                         ss.w = ss.w // 2 + assorbito // 2
-                        msg += "💥 Esplosione! Scudo parzialmente assorbe. "
+                        msg += "💥 Tempesta magnetica! Scudo parzialmente assorbe. "
                     else:
                         ss.w = ss.w // 2
-                        msg += "💥 Esplosione! Energia dimezzata! "
+                        msg += "💥 Tempesta magnetica colpisce! Energia dimezzata! "
+                ss.tempesta_pending = None  # tempesta consumata
+
+            elif random.random() < 0.30:
+                # FASE A — sorteggia centro e avvisa via Starfleet
+                ex, ey = random.randint(0,9), random.randint(0,9)
+                ss.tempesta_pending = (ex, ey)
+                ss.esplosione = []
+                # [STARFLEET: TEMPESTA] preavviso nella finestra comunicazioni
+                starfleet_msg(f"⭐ ATTENZIONE! Tempesta magnetica in arrivo su ({ex}, {ey}) ⭐")
+
             else:
                 ss.esplosione = []
+                ss.tempesta_pending = None
+            # ── fine logica tempesta ─────────────────────────────────────────
 
             # Ricarica scudo lenta (+1 ogni mossa se non al max)
             if ss.scudo < 100 and ss.cnt_mosse % 5 == 0:
@@ -649,10 +664,12 @@ def esegui_mossa(dx, dy):
         starfleet_msg(genera_frase_adams())
 
     # ── [STARFLEET: ENERGIA BASSA] avviso se energia < 50 ──────────────
-    # Sovrascrive l'oracolo: ha priorità su Adams ma non sulla tempesta
-    if 0 < ss.w < 50 and ss.tempesta_pending is None:
+    # Priorità: tempesta > energia bassa > oracolo Adams
+    if 0 < ss.w < 50 and ss.get("tempesta_pending") is None:
         starfleet_msg("⚠️ Scarsa energia: per ricaricare, fare i quiz")
-        ss.starfleet_alert = True   # flag per colorare la box in rosso
+        ss.starfleet_alert = True
+    elif ss.get("tempesta_pending") is not None:
+        ss.starfleet_alert = False  # tempesta in arrivo: box normale (gialla)
     else:
         ss.starfleet_alert = False
 
@@ -669,16 +686,17 @@ def esegui_mossa(dx, dy):
 # ============================================================
 def disegna_griglia():
     ss  = st.session_state
-    fig = plt.figure(figsize=(6.5, 6.5))
+    fig = plt.figure(figsize=(7, 7))
     fig.patch.set_facecolor('#02040f')
-    ax  = fig.add_axes([0.06, 0.04, 0.78, 0.92])
+    # add_axes([left, bottom, width, height]) — occupa tutta la figura senza spazio per legenda
+    ax  = fig.add_axes([0.06, 0.04, 0.91, 0.93])
     ax.set_facecolor('#030612')
     ax.set_xlim(-0.5, 9.5)
     ax.set_ylim(-0.5, 9.5)
     ax.set_xticks(range(10))
     ax.set_yticks(range(10))
-    ax.tick_params(colors='#334466', labelsize=7)
-    ax.grid(True, linestyle='-', linewidth=0.3, alpha=0.35, color='#1a2a44')
+    ax.tick_params(colors='#334466', labelsize=8)
+    ax.grid(True, linestyle='-', linewidth=0.4, alpha=0.4, color='#1a2a44')
 
     # Immagine di sfondo
     bg_path = "p_background.png"
@@ -743,26 +761,7 @@ def disegna_griglia():
     ax.scatter(px, py, marker=astronave_path, s=600,
                color='#FFD700', edgecolor='#ff8800', linewidth=1.5, zorder=6)
 
-    # Legenda migliorata
-    leg = [
-        Line2D([0],[0],marker='o',color='w',markerfacecolor='#ff3311',  markersize=9, label='Ostacolo (-20)'),
-        Line2D([0],[0],marker='o',color='w',markerfacecolor='#00dd66',  markersize=9, label='Bonus (+20 ⚡+10 🛡)'),
-        Line2D([0],[0],marker='o',color='w',markerfacecolor='none',     markersize=9,
-               markeredgecolor='#8899aa', markeredgewidth=1.5,          label='Stealth (-15)'),
-        Line2D([0],[0],marker='o',color='w',markerfacecolor='#4488ff',  markersize=9, label='Arrivo'),
-        Line2D([0],[0],marker='o',color='w',markerfacecolor='#ff2200',  markersize=9, label='Nemico'),
-        Line2D([0],[0],marker='o',color='w',markerfacecolor='#FFD700',  markersize=9,
-               markeredgecolor='#ff8800',                                label=ss.nome or 'Tu'),
-        Line2D([0],[0],marker='o',color='w',markerfacecolor='#88ccff',  markersize=9,
-               alpha=0.7,                                                label=f'Scudo ({ss.scudo}%)'),
-        Line2D([0],[0],marker='o',color='w',markerfacecolor='hotpink',  markersize=9,
-               alpha=0.6,                                                label='Esplosione (-w/2)'),
-    ]
-    legend = ax.legend(
-        handles=leg, loc='upper left', bbox_to_anchor=(1.02, 1.0),
-        fontsize=7, framealpha=0.85, facecolor='#060c20',
-        labelcolor='#99aabb', edgecolor='#1a2a44'
-    )
+    # Legenda rimossa dal plot — mostrata come HTML sotto i box Ship Status
 
     ax.set_title(
         f"⚡ {ss.w}  |  🛡 {ss.scudo}%  |  Nemico: {tuple(ss.pos_nemica)}",
@@ -931,7 +930,7 @@ def schermata_gioco():
 
     mostra_testata()
 
-    # ── RIGA 1: Galaxy View (grande) + Ship Status (destra) ──────────────
+    # ── RIGA 1: Galaxy View + Ship Status ────────────────────────────────
     col_mappa, col_status = st.columns([3, 1.2])
 
     with col_mappa:
@@ -943,10 +942,9 @@ def schermata_gioco():
         st.markdown('<div class="section-title">🚀 SHIP STATUS</div>', unsafe_allow_html=True)
 
         # --- ENERGIA ---
-        e_pct = max(0, min(100, ss.w))
-        e_color = ("#00ff88" if e_pct > 60
-                   else "#ffaa00" if e_pct > 30 else "#ff4444")
-        e_class = "good" if e_pct > 60 else "warning" if e_pct > 30 else "danger"
+        e_pct   = max(0, min(100, ss.w))
+        e_color = "#00ff88" if e_pct > 60 else "#ffaa00" if e_pct > 30 else "#ff4444"
+        e_class = "good"    if e_pct > 60 else "warning"  if e_pct > 30 else "danger"
         st.markdown(f"""
         <div class="metric-box">
             <div class="metric-label">⚡ ENERGIA</div>
@@ -959,9 +957,8 @@ def schermata_gioco():
         </div>""", unsafe_allow_html=True)
 
         # --- SCUDO ---
-        s_pct = max(0, min(100, ss.scudo))
-        s_color = ("#4499ff" if s_pct > 50
-                   else "#8866ff" if s_pct > 20 else "#446688")
+        s_pct   = max(0, min(100, ss.scudo))
+        s_color = "#4499ff" if s_pct > 50 else "#8866ff" if s_pct > 20 else "#446688"
         st.markdown(f"""
         <div class="metric-box">
             <div class="metric-label">🛡 SCUDO</div>
@@ -980,7 +977,7 @@ def schermata_gioco():
             <div class="metric-value">({ss.pos[0]}, {ss.pos[1]})</div>
         </div>""", unsafe_allow_html=True)
 
-        # --- PUNTEGGIO TOTALE ---
+        # --- PUNTEGGIO ---
         db   = ss.db
         mask = db["nome"].str.lower() == ss.nome.lower()
         ww   = int(float(db.loc[mask, "ww"].values[0])) if mask.any() else 0
@@ -990,40 +987,48 @@ def schermata_gioco():
             <div class="metric-value good">{ww}</div>
         </div>""", unsafe_allow_html=True)
 
+        # --- LEGENDA HTML sotto i box ---
+        nome_display = ss.nome or "Tu"
+        st.markdown(f"""
+        <div style="margin-top:10px; font-size:0.78rem; font-family:'Share Tech Mono',monospace; color:#8899bb; line-height:1.9;">
+            <div class="section-title" style="margin-bottom:6px;">▸ LEGENDA</div>
+            <span style="color:#ff3311;">●</span> Ostacolo (-20) &nbsp;
+            <span style="color:#00dd66;">●</span> Bonus (+20⚡+10🛡)<br>
+            <span style="color:#8899aa; border:1px solid #8899aa; border-radius:50%; padding:0 2px;">○</span> Stealth (-15) &nbsp;
+            <span style="color:#4488ff;">●</span> Arrivo<br>
+            <span style="color:#ff2200;">●</span> Nemico &nbsp;
+            <span style="color:#FFD700;">●</span> {nome_display}<br>
+            <span style="color:#88ccff;">●</span> Scudo ({ss.scudo}%) &nbsp;
+            <span style="color:hotpink;">●</span> Tempesta (-w/2)
+        </div>""", unsafe_allow_html=True)
+
     # ── RIGA 2: Navigazione + Event Log + Starfleet ───────────────────────
     col_nav, col_log = st.columns([1, 2])
 
     with col_nav:
         st.markdown('<div class="section-title">🕹 NAVIGAZIONE</div>', unsafe_allow_html=True)
-
         dx = st.number_input("X (SX/DX)", min_value=-9, max_value=9,
                              value=0, step=1, key="inp_dx")
         dy = st.number_input("Y (SU/GIU)", min_value=-9, max_value=9,
                              value=0, step=1, key="inp_dy")
-
         if st.button("🚀 MUOVI", type="primary", key="btn_muovi"):
             esegui_mossa(dx, dy)
             st.rerun()
-
         st.markdown('<div class="section-title">▸ SISTEMI</div>', unsafe_allow_html=True)
-        if st.button("📊 Database", key="btn_db"):
-            ss.schermata = "admin"; st.rerun()
-        if st.button("🎓 Quiz", key="btn_quiz"):
-            ss.quiz_tipo = None; ss.schermata = "quiz"; st.rerun()
-        if st.button("🔄 Nuova partita", key="btn_nuova"):
-            nuova_partita(ss.nome); st.rerun()
-        if st.button("← Logout", key="btn_logout"):
-            ss.schermata = "login"; st.rerun()
+        if st.button("📊 Database",    key="btn_db"):    ss.schermata = "admin"; st.rerun()
+        if st.button("🎓 Quiz",        key="btn_quiz"):  ss.quiz_tipo = None; ss.schermata = "quiz"; st.rerun()
+        if st.button("🔄 Nuova partita", key="btn_nuova"): nuova_partita(ss.nome); st.rerun()
+        if st.button("← Logout",      key="btn_logout"): ss.schermata = "login"; st.rerun()
 
     with col_log:
         st.markdown('<div class="section-title">📡 EVENT LOG</div>', unsafe_allow_html=True)
 
-        # Messaggi evento (sempre visibili, box vuota se nessun evento)
+        # Messaggi evento — sempre visibili
         msg_class = ""
         if ss.msg:
-            msg_class = ("danger" if any(x in ss.msg for x in ["💀","❌","💥","⚠️"])
-                         else "success" if any(x in ss.msg for x in ["🏆","🟢","✅"])
-                         else "")
+            msg_class = ("danger"  if any(x in ss.msg for x in ["💀","❌","💥","⚠️"])
+                    else "success" if any(x in ss.msg for x in ["🏆","🟢","✅"])
+                    else "")
         st.markdown(f'<div class="msg-box {msg_class}">{ss.msg}</div>',
                     unsafe_allow_html=True)
 
