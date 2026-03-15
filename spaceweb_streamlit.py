@@ -166,35 +166,39 @@ st.markdown("""
     .msg-box.danger { border-left-color: #ff4444; color: #ffaaaa; }
     .msg-box.success { border-left-color: #00ff88; color: #aaffcc; }
 
-    /* Oracolo */
+    /* Oracolo / Starfleet Communications */
     .oracolo-box {
-        background: rgba(255,215,0,0.04);
-        border: 1px solid rgba(255,215,0,0.15);
-        border-radius: 4px;
-        padding: 10px 12px;
-        min-height: 55px;
-        font-size: 0.78rem;
-        color: #ddcc66;
-        margin-top: 4px;
+        background: rgba(255,215,0,0.07);
+        border: 2px solid rgba(255,215,0,0.35);
+        border-radius: 6px;
+        padding: 16px 18px;
+        min-height: 80px;
+        font-size: 1.0rem;
+        color: #ffe88a;
+        margin-top: 6px;
         font-style: italic;
         font-family: 'Rajdhani', sans-serif;
         letter-spacing: 0.5px;
-        line-height: 1.5;
+        line-height: 1.6;
+        box-shadow: 0 0 14px rgba(255,215,0,0.1), inset 0 0 10px rgba(255,215,0,0.04);
     }
     .oracolo-title {
-        color: rgba(255,215,0,0.6);
+        color: #FFD700;
         font-family: 'Orbitron', monospace;
-        font-size: 0.6rem;
-        letter-spacing: 3px;
-        margin-bottom: 3px;
+        font-size: 0.7rem;
+        letter-spacing: 4px;
+        margin-bottom: 5px;
+        text-shadow: 0 0 8px rgba(255,215,0,0.5);
     }
     /* [STARFLEET: ENERGIA BASSA] sfondo rosso per avviso energia */
     .oracolo-box.alert {
-        background: rgba(180,20,20,0.25);
-        border-color: rgba(255,80,80,0.5);
-        color: #ffaaaa;
+        background: rgba(180,20,20,0.35);
+        border: 2px solid rgba(255,80,80,0.7);
+        color: #ffcccc;
         font-style: normal;
         font-weight: bold;
+        font-size: 1.05rem;
+        box-shadow: 0 0 18px rgba(255,60,60,0.25), inset 0 0 12px rgba(255,60,60,0.08);
     }
 
     /* Quiz */
@@ -545,7 +549,10 @@ def nuova_partita(nome):
     st.session_state.pos_nemica  = [9, 0]
     st.session_state.cnt_mosse   = 0
     st.session_state.cnt_oracolo = 0
-    st.session_state.msg         = f"Benvenuto {nome}! ⚠️ Attenzione alla nave rossa! Scudo al 50%."
+    st.session_state.msg              = ""
+    # [STARFLEET: BENVENUTO] messaggio iniziale nella finestra comunicazioni
+    st.session_state.oracolo_txt      = f"🚀 Benvenuto {nome}! Attenzione alla nave rossa. Scudo al 50%. Buona fortuna, comandante."
+    st.session_state.starfleet_alert  = False
     st.session_state.starfleet_alert = False  # [STARFLEET: ENERGIA BASSA] reset
     st.session_state.schermata   = "gioco"
 
@@ -924,13 +931,17 @@ def schermata_gioco():
 
     mostra_testata()
 
-    col_mappa, col_ctrl = st.columns([3, 1.2])
+    # ── RIGA 1: Galaxy View (grande) + Ship Status (destra) ──────────────
+    col_mappa, col_status = st.columns([3, 1.2])
 
     with col_mappa:
+        st.markdown('<div class="section-title">🌌 GALAXY VIEW</div>', unsafe_allow_html=True)
         buf = disegna_griglia()
         st.image(buf, use_container_width=True)
 
-    with col_ctrl:
+    with col_status:
+        st.markdown('<div class="section-title">🚀 SHIP STATUS</div>', unsafe_allow_html=True)
+
         # --- ENERGIA ---
         e_pct = max(0, min(100, ss.w))
         e_color = ("#00ff88" if e_pct > 60
@@ -969,7 +980,21 @@ def schermata_gioco():
             <div class="metric-value">({ss.pos[0]}, {ss.pos[1]})</div>
         </div>""", unsafe_allow_html=True)
 
-        st.markdown('<div class="section-title">▸ NAVIGAZIONE</div>', unsafe_allow_html=True)
+        # --- PUNTEGGIO TOTALE ---
+        db   = ss.db
+        mask = db["nome"].str.lower() == ss.nome.lower()
+        ww   = int(float(db.loc[mask, "ww"].values[0])) if mask.any() else 0
+        st.markdown(f"""
+        <div class="metric-box">
+            <div class="metric-label">🏆 PUNTEGGIO</div>
+            <div class="metric-value good">{ww}</div>
+        </div>""", unsafe_allow_html=True)
+
+    # ── RIGA 2: Navigazione + Event Log + Starfleet ───────────────────────
+    col_nav, col_log = st.columns([1, 2])
+
+    with col_nav:
+        st.markdown('<div class="section-title">🕹 NAVIGAZIONE</div>', unsafe_allow_html=True)
 
         dx = st.number_input("X (SX/DX)", min_value=-9, max_value=9,
                              value=0, step=1, key="inp_dx")
@@ -981,34 +1006,33 @@ def schermata_gioco():
             st.rerun()
 
         st.markdown('<div class="section-title">▸ SISTEMI</div>', unsafe_allow_html=True)
-
         if st.button("📊 Database", key="btn_db"):
             ss.schermata = "admin"; st.rerun()
-
         if st.button("🎓 Quiz", key="btn_quiz"):
             ss.quiz_tipo = None; ss.schermata = "quiz"; st.rerun()
-
-        # Messaggi
-        if ss.msg:
-            msg_class = ("danger" if any(x in ss.msg for x in ["💀","❌","💥","⚠️"])
-                         else "success" if any(x in ss.msg for x in ["🏆","🟢","✅"])
-                         else "")
-            st.markdown(f'<div class="msg-box {msg_class}">{ss.msg}</div>',
-                        unsafe_allow_html=True)
-
-        # Oracolo Starfleet
-        st.markdown('<div class="oracolo-title">🌌 COMUNICAZIONI DA STARFLEET</div>',
-                    unsafe_allow_html=True)
-        # [STARFLEET] classe 'alert' attiva sfondo rosso se energia bassa
-        alert_class = "alert" if ss.get("starfleet_alert", False) else ""
-        st.markdown(f'<div class="oracolo-box {alert_class}">{ss.oracolo_txt}</div>',
-                    unsafe_allow_html=True)
-
-        st.markdown("---")
         if st.button("🔄 Nuova partita", key="btn_nuova"):
             nuova_partita(ss.nome); st.rerun()
         if st.button("← Logout", key="btn_logout"):
             ss.schermata = "login"; st.rerun()
+
+    with col_log:
+        st.markdown('<div class="section-title">📡 EVENT LOG</div>', unsafe_allow_html=True)
+
+        # Messaggi evento (sempre visibili, box vuota se nessun evento)
+        msg_class = ""
+        if ss.msg:
+            msg_class = ("danger" if any(x in ss.msg for x in ["💀","❌","💥","⚠️"])
+                         else "success" if any(x in ss.msg for x in ["🏆","🟢","✅"])
+                         else "")
+        st.markdown(f'<div class="msg-box {msg_class}">{ss.msg}</div>',
+                    unsafe_allow_html=True)
+
+        # [STARFLEET] Finestra comunicazioni — sempre visibile
+        st.markdown('<div class="oracolo-title">🌌 COMUNICAZIONI DA STARFLEET</div>',
+                    unsafe_allow_html=True)
+        alert_class = "alert" if ss.get("starfleet_alert", False) else ""
+        st.markdown(f'<div class="oracolo-box {alert_class}">{ss.oracolo_txt}</div>',
+                    unsafe_allow_html=True)
 
 # ============================================================
 # ROUTER
