@@ -23,17 +23,247 @@ from supabase import create_client, Client
 # CONFIGURAZIONE PAGINA
 # ============================================================
 st.set_page_config(
-    page_title="Space Web",
+    page_title="🚀 Space Web",
     page_icon="🚀",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
-# CSS esterno — sostituisce il blocco st.markdown(<style>...) che c'era qui
-def load_css():
-    with open("assets/css/space_theme.css") as f:
-        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
-load_css()
+# CSS personalizzato — tema spaziale scuro con effetti migliorati
+st.markdown("""
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Rajdhani:wght@300;500;700&display=swap');
+
+    html, body, [class*="css"] {
+        background-color: #02040f;
+        color: #c8d8f0;
+        font-family: 'Share Tech Mono', monospace;
+    }
+    .stApp {
+        background: radial-gradient(ellipse at 20% 50%, rgba(20,10,60,0.8) 0%, transparent 60%),
+                    radial-gradient(ellipse at 80% 20%, rgba(10,30,80,0.6) 0%, transparent 55%),
+                    #02040f;
+    }
+
+    h1 {
+        font-family: 'Orbitron', monospace;
+        color: #FFD700;
+        text-shadow: 0 0 20px #FFD700, 0 0 40px #ff8c00, 0 0 80px rgba(255,180,0,0.3);
+        text-align: center;
+        letter-spacing: 8px;
+        font-size: 2.8rem !important;
+        margin-bottom: 0.2rem;
+    }
+    .subtitle {
+        text-align: center;
+        color: #6688bb;
+        font-size: 0.75rem;
+        letter-spacing: 5px;
+        margin-bottom: 1.5rem;
+        font-family: 'Rajdhani', sans-serif;
+    }
+
+    /* Bottoni — stile cockpit */
+    .stButton > button {
+        background: linear-gradient(135deg, #0d1b4b 0%, #1a0e3d 100%);
+        color: #8ab4f8;
+        font-family: 'Orbitron', monospace;
+        font-weight: 700;
+        font-size: 0.72rem;
+        border: 1px solid rgba(100,160,255,0.3);
+        border-radius: 3px;
+        letter-spacing: 2px;
+        transition: all 0.15s;
+        width: 100%;
+        text-transform: uppercase;
+    }
+    .stButton > button:hover {
+        background: linear-gradient(135deg, #1a2a6c, #3a1060);
+        border-color: #FFD700;
+        color: #FFD700;
+        box-shadow: 0 0 12px rgba(255,215,0,0.3), inset 0 0 8px rgba(255,215,0,0.05);
+    }
+    .stButton > button[kind="primary"] {
+        background: linear-gradient(135deg, #004d20 0%, #007030 100%);
+        color: #00ff88;
+        border-color: rgba(0,255,136,0.4);
+        font-size: 0.85rem;
+    }
+    .stButton > button[kind="primary"]:hover {
+        background: linear-gradient(135deg, #007030, #00a040);
+        box-shadow: 0 0 16px rgba(0,255,136,0.4);
+        border-color: #00ff88;
+    }
+
+    /* Card metriche */
+    .metric-box {
+        background: linear-gradient(135deg, rgba(255,215,0,0.06) 0%, rgba(255,120,0,0.03) 100%);
+        border: 1px solid rgba(255,215,0,0.25);
+        border-radius: 4px;
+        padding: 10px 14px;
+        margin: 4px 0;
+        font-family: 'Orbitron', monospace;
+        position: relative;
+        overflow: hidden;
+    }
+    .metric-box::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(255,215,0,0.6), transparent);
+    }
+    .metric-label { color: #6688aa; font-size: 0.65rem; letter-spacing: 3px; margin-bottom: 2px; }
+    .metric-value { color: #FFD700; font-size: 1.3rem; font-weight: 900; }
+    .metric-value.danger { color: #ff4444; text-shadow: 0 0 8px rgba(255,80,80,0.6); }
+    .metric-value.warning { color: #ffaa00; }
+    .metric-value.good { color: #00ff88; }
+
+    /* Barra energia */
+    .energy-bar-container {
+        background: rgba(0,0,0,0.4);
+        border: 1px solid rgba(100,160,255,0.15);
+        border-radius: 3px;
+        height: 8px;
+        margin: 4px 0 8px 0;
+        overflow: hidden;
+    }
+    .energy-bar-fill {
+        height: 100%;
+        border-radius: 2px;
+        transition: width 0.3s ease;
+    }
+
+    /* Barra scudo */
+    .shield-bar-container {
+        background: rgba(0,0,0,0.4);
+        border: 1px solid rgba(100,200,255,0.15);
+        border-radius: 3px;
+        height: 6px;
+        margin: 4px 0 8px 0;
+        overflow: hidden;
+    }
+    .shield-bar-fill {
+        height: 100%;
+        border-radius: 2px;
+        background: linear-gradient(90deg, #1166ff, #44aaff);
+        box-shadow: 0 0 6px rgba(68,170,255,0.5);
+    }
+
+    /* Messaggi */
+    .msg-box {
+        background: rgba(0,5,25,0.85);
+        border: 1px solid rgba(100,140,200,0.2);
+        border-left: 2px solid rgba(100,160,255,0.5);
+        border-radius: 3px;
+        padding: 10px 12px;
+        min-height: 50px;
+        font-size: 0.8rem;
+        color: #99bbdd;
+        margin-top: 6px;
+        font-family: 'Share Tech Mono', monospace;
+    }
+    .msg-box.danger { border-left-color: #ff4444; color: #ffaaaa; }
+    .msg-box.success { border-left-color: #00ff88; color: #aaffcc; }
+
+    /* Oracolo */
+    .oracolo-box {
+        background: rgba(255,215,0,0.04);
+        border: 1px solid rgba(255,215,0,0.15);
+        border-radius: 4px;
+        padding: 10px 12px;
+        min-height: 55px;
+        font-size: 0.78rem;
+        color: #ddcc66;
+        margin-top: 4px;
+        font-style: italic;
+        font-family: 'Rajdhani', sans-serif;
+        letter-spacing: 0.5px;
+        line-height: 1.5;
+    }
+    .oracolo-title {
+        color: rgba(255,215,0,0.6);
+        font-family: 'Orbitron', monospace;
+        font-size: 0.6rem;
+        letter-spacing: 3px;
+        margin-bottom: 3px;
+    }
+
+    /* Quiz */
+    .quiz-box {
+        background: linear-gradient(135deg, rgba(0,20,70,0.9) 0%, rgba(10,5,40,0.9) 100%);
+        border: 1px solid rgba(80,120,220,0.35);
+        border-radius: 6px;
+        padding: 18px;
+        margin: 8px 0;
+        font-family: 'Share Tech Mono', monospace;
+    }
+    .quiz-title {
+        font-family: 'Orbitron', monospace;
+        color: #88aaff;
+        font-size: 0.9rem;
+        letter-spacing: 2px;
+        margin-bottom: 12px;
+    }
+    .quiz-question {
+        color: #c8d8f8;
+        font-size: 0.88rem;
+        line-height: 1.6;
+        margin-bottom: 10px;
+    }
+
+    /* Input numeri */
+    .stNumberInput > div > input {
+        background: #080f28;
+        color: #FFD700;
+        border: 1px solid rgba(100,160,255,0.25);
+        border-radius: 3px;
+        font-family: 'Share Tech Mono', monospace;
+        font-size: 1.1rem;
+    }
+    .stNumberInput label {
+        color: #6688aa !important;
+        font-size: 0.7rem !important;
+        letter-spacing: 2px;
+        font-family: 'Orbitron', monospace !important;
+    }
+
+    /* Separatore */
+    hr { border-color: rgba(100,160,255,0.1) !important; margin: 8px 0 !important; }
+
+    /* Tabella admin */
+    div[data-testid="stDataFrame"] { width: 100%; }
+    .stDataFrame { background: #080f28; }
+
+    /* Scoreboard entry */
+    .score-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 5px 0;
+        border-bottom: 1px solid rgba(100,160,255,0.08);
+        font-size: 0.78rem;
+        color: #8899bb;
+    }
+    .score-row .sname { color: #aabbdd; font-weight: bold; }
+    .score-row .sval { color: #FFD700; font-family: 'Orbitron', monospace; }
+
+    footer { display: none; }
+    #MainMenu { display: none; }
+    .stDeployButton { display: none; }
+
+    /* Section divider */
+    .section-title {
+        font-family: 'Orbitron', monospace;
+        font-size: 0.65rem;
+        letter-spacing: 4px;
+        color: rgba(100,160,255,0.5);
+        text-transform: uppercase;
+        margin: 10px 0 6px 0;
+        padding-bottom: 4px;
+        border-bottom: 1px solid rgba(100,160,255,0.1);
+    }
+</style>
+""", unsafe_allow_html=True)
 
 # ============================================================
 # COSTANTI REGOLO
@@ -249,27 +479,12 @@ def aggiorna_punteggio(nome_utente, quale, valore):
     db.loc[mask, col_p] = valore
     db.loc[mask, col_d] = datetime.today().strftime("%d/%m/%y")
     idx = db.index[mask][0]
-    total = sum(int(float(db.at[idx, f"punteggio{i}"])) for i in range(1, 8) if f"punteggio{i}" in db.columns)
-    db.at[idx, "ww"] = int(total)
+    total = sum(int(db.at[idx, f"punteggio{i}"]) for i in range(1, 8) if f"punteggio{i}" in db.columns)
+    db.at[idx, "ww"] = total
     st.session_state.db = db
     row = db.loc[idx].to_dict()
     # [SUPABASE] Sincronizza la riga aggiornata su Supabase dopo ogni modifica ai punteggi
     db_salva_utente(row)
-
-
-def db_salva_utente(row: dict):
-    try:
-        sb = get_supabase()
-        # Converti tutti i valori numerici in int puro per Supabase
-        row_clean = {}
-        for k, v in row.items():
-            if isinstance(v, float):
-                row_clean[k] = int(v)
-            else:
-                row_clean[k] = v
-        sb.table("utenti").upsert(row_clean, on_conflict="nome").execute()
-    except Exception as e:
-        st.warning(f"⚠️ Errore salvataggio Supabase: {e}")
 
 def genera_frase_adams():
     try:
@@ -678,13 +893,17 @@ def schermata_gioco():
 
     mostra_testata()
 
-    col_mappa, col_ctrl = st.columns([3, 1.2])
+    # ── RIGA 1: Galaxy View (grande) + Ship Status (destra) ──
+    col_mappa, col_status = st.columns([3, 1.2])
 
     with col_mappa:
+        st.markdown('<div class="section-title">🌌 GALAXY VIEW</div>', unsafe_allow_html=True)
         buf = disegna_griglia()
         st.image(buf, use_container_width=True)
 
-    with col_ctrl:
+    with col_status:
+        st.markdown('<div class="section-title">🚀 SHIP STATUS</div>', unsafe_allow_html=True)
+
         # --- ENERGIA ---
         e_pct = max(0, min(100, ss.w))
         e_color = ("#00ff88" if e_pct > 60
@@ -723,7 +942,21 @@ def schermata_gioco():
             <div class="metric-value">({ss.pos[0]}, {ss.pos[1]})</div>
         </div>""", unsafe_allow_html=True)
 
-        st.markdown('<div class="section-title">▸ NAVIGAZIONE</div>', unsafe_allow_html=True)
+        # --- PUNTEGGIO TOTALE ---
+        db   = ss.db
+        mask = db["nome"].str.lower() == ss.nome.lower()
+        ww   = int(db.loc[mask, "ww"].values[0]) if mask.any() else 0
+        st.markdown(f"""
+        <div class="metric-box">
+            <div class="metric-label">🏆 PUNTEGGIO</div>
+            <div class="metric-value good">{ww}</div>
+        </div>""", unsafe_allow_html=True)
+
+    # ── RIGA 2: Navigazione + Event Log ──
+    col_nav, col_log = st.columns([1, 2])
+
+    with col_nav:
+        st.markdown('<div class="section-title">🕹 NAVIGAZIONE</div>', unsafe_allow_html=True)
 
         dx = st.number_input("X (SX/DX)", min_value=-9, max_value=9,
                              value=0, step=1, key="inp_dx")
@@ -738,11 +971,17 @@ def schermata_gioco():
 
         if st.button("📊 Database", key="btn_db"):
             ss.schermata = "admin"; st.rerun()
-
         if st.button("🎓 Quiz", key="btn_quiz"):
             ss.quiz_tipo = None; ss.schermata = "quiz"; st.rerun()
+        if st.button("🔄 Nuova partita", key="btn_nuova"):
+            nuova_partita(ss.nome); st.rerun()
+        if st.button("← Logout", key="btn_logout"):
+            ss.schermata = "login"; st.rerun()
 
-        # Messaggi
+    with col_log:
+        st.markdown('<div class="section-title">📡 EVENT LOG</div>', unsafe_allow_html=True)
+
+        # Messaggi evento
         if ss.msg:
             msg_class = ("danger" if any(x in ss.msg for x in ["💀","❌","💥","⚠️"])
                          else "success" if any(x in ss.msg for x in ["🏆","🟢","✅"])
@@ -755,12 +994,6 @@ def schermata_gioco():
                     unsafe_allow_html=True)
         st.markdown(f'<div class="oracolo-box">{ss.oracolo_txt}</div>',
                     unsafe_allow_html=True)
-
-        st.markdown("---")
-        if st.button("🔄 Nuova partita", key="btn_nuova"):
-            nuova_partita(ss.nome); st.rerun()
-        if st.button("← Logout", key="btn_logout"):
-            ss.schermata = "login"; st.rerun()
 
 # ============================================================
 # ROUTER
