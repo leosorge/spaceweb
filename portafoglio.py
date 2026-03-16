@@ -1,4 +1,3 @@
-import ipywidgets as widgets
 from IPython.display import clear_output
 from corsi import QUIZ_DATI  # Importiamo il nuovo catalogo arricchito
 
