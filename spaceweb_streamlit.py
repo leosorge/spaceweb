@@ -465,7 +465,12 @@ def disegna_griglia():
 # TESTATA
 # ============================================================
 def mostra_testata():
-    titolo_hover = MISSIONE_TESTO.replace('"', '&quot;')
+    titolo_hover = (
+    "Missione: andare da 0,0 a 9,9 affrontando&#10;"
+    "nemico, mine, tempeste e quiz,&#10;"
+    "passando per i 3 punti verdi iniziali&#10;"
+    "per ottenere il riconoscimento del premio."
+)
     img_path = os.path.join(os.path.dirname(__file__), "q_title.png")
     if os.path.exists(img_path):
         with open(img_path, "rb") as f:
@@ -473,7 +478,7 @@ def mostra_testata():
         st.markdown(
             f'<div title="{titolo_hover}" style="margin-bottom:0.5rem;">'
             f'<img src="data:image/png;base64,{b64}" '
-            f'style="width:800px; display:block; margin-left:0;"/>'
+            f'style="width:1600px; display:block; margin-left:0;"/>'
             f'</div>',
             unsafe_allow_html=True,
         )
