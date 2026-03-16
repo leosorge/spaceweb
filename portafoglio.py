@@ -24,72 +24,66 @@ def Portafoglio():
     quiz_info = getattr(corsi, 'QUIZ_DATI', {})
     df_utenti = ss.get('db', pd.DataFrame())
 
-    # --- CSS: BOX UNICO SENZA SOTTO-BOX ---
+    # --- CSS: ALTEZZA BOX 300PX E ALTEZZA LOGO FISSA ---
     st.markdown("""
         <style>
-        /* Rimuove i bordi e gli sfondi automatici di Streamlit */
         [data-testid="stVerticalBlock"] > div:has(div.card-anchor) {
             background-color: transparent !important;
             border: none !important;
-            box-shadow: none !important;
             padding: 0 !important;
         }
 
         .card-container {
-            border-radius: 25px;
+            border-radius: 20px;
             padding: 20px;
-            height: 650px; /* Aumentata leggermente per far spazio all'immagine */
+            height: 300px; /* ALTEZZA BOX FISSA */
             display: flex;
             flex-direction: column;
-            align-items: center; /* Centra l'immagine e i testi */
-            box-shadow: 4px 4px 15px rgba(0,0,0,0.3);
+            box-shadow: 2px 2px 10px rgba(0,0,0,0.3);
             margin-bottom: 20px;
             font-family: sans-serif;
             box-sizing: border-box;
+            overflow: hidden;
             text-align: center;
         }
 
-        .card-active { background-color: #e8f5e9; border: 2px solid #c8e6c9; }
-        .card-coming { background-color: #eeeeee; border: 2px solid #bdbdbd; }
-
-        /* Immagine forzata a 300px */
-        .card-img {
-            width: 300px !important;
-            height: auto;
-            border-radius: 15px;
-            margin-bottom: 15px;
-            object-fit: contain;
-        }
+        .card-active { background-color: #e8f5e9; border: 1px solid #c8e6c9; }
+        .card-coming { background-color: #eeeeee; border: 1px solid #bdbdbd; }
 
         .card-title {
-            font-size: 1.3rem;
+            font-size: 1.1rem;
             font-weight: 800;
             text-transform: uppercase;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             color: #1b5e20;
         }
         
         .card-body-text {
             color: #1a1a1a !important;
-            font-size: 0.95rem;
-            flex-grow: 1;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
         }
 
-        .card-footer-stats {
-            width: 100%;
-            color: #444;
-            font-size: 0.85rem;
-            border-top: 1px solid rgba(0,0,0,0.1);
-            padding-top: 10px;
-            margin-top: 10px;
+        /* LOGO CON ALTEZZA FISSA (Y), LARGHEZZA AUTOMATICA */
+        .card-img-y-fixed {
+            height: 120px !important; /* ALTEZZA LOGO FISSA */
+            width: auto !important;
+            object-fit: contain;
+            margin-top: auto; /* Lo spinge in fondo */
+            align-self: center;
         }
 
-        .punti-label {
-            width: 100%;
+        .punti-badge {
+            position: absolute;
+            top: 12px;
+            right: 12px;
             font-weight: 900;
-            font-size: 1.4rem;
-            text-align: right;
+            font-size: 0.8rem;
             color: #2e7d32;
+            background: rgba(255,255,255,0.6);
+            padding: 3px 10px;
+            border-radius: 12px;
+            border: 1px solid #c8e6c9;
         }
         </style>
     """, unsafe_allow_html=True)
@@ -101,36 +95,31 @@ def Portafoglio():
         with cols[i % 3]:
             st.markdown('<div class="card-anchor"></div>', unsafe_allow_html=True)
             
+            # Logica unità di misura
+            unita = "Qwat" if q_id == 2 else "Punti"
+
             if q_id > 5:
                 # BOX COMING SOON
                 html_card = f"""
-                <div class="card-container card-coming">
-                    <img src="{url_img}" class="card-img">
-                    <div class="card-title" style="color: #424242;">🕒 COMING SOON!</div>
+                <div class="card-container card-coming" style="position: relative;">
+                    <div class="card-title" style="color: #666;">🕒 COMING SOON</div>
                     <div class="card-body-text">
-                        <p>I sistemi stanno elaborando i nuovi dati di navigazione.</p>
+                        <p>Analisi dati in corso...<br>Modulo non ancora disponibile.</p>
                     </div>
-                    <div class="punti-label" style="color: #757575;">+0 Punti</div>
+                    <img src="{url_img}" class="card-img-y-fixed">
                 </div>
                 """
             else:
                 # BOX ATTIVO
-                col_p = f"punteggio{q_id}"
-                n_utenti = len(df_utenti[df_utenti[col_p] > 0]) if not df_utenti.empty and col_p in df_utenti.columns else 0
-                unita = "Qwat" if q_id == 2 else "Punti"
-
                 html_card = f"""
-                <div class="card-container card-active">
-                    <img src="{url_img}" class="card-img">
+                <div class="card-container card-active" style="position: relative;">
+                    <div class="punti-badge">+100 {unita}</div>
                     <div class="card-title">⭐ {info.get("nome", "").upper()}</div>
                     <div class="card-body-text">
-                        <p><b>Sponsor:</b> {info.get("sponsor", "N/D")}<br>
-                        <b>Premio:</b> {info.get("premio", "N/D")}</p>
+                        <b>Sponsor:</b> {info.get("sponsor", "N/D")}<br>
+                        <b>Premio:</b> {info.get("premio", "N/D")}
                     </div>
-                    <div class="card-footer-stats">
-                        👥 <b>Utenti:</b> {n_utenti} | 🕒 <b>Update:</b> {info.get("data_mod", "N/D")}
-                    </div>
-                    <div class="punti-label">+100 {unita}</div>
+                    <img src="{url_img}" class="card-img-y-fixed">
                 </div>
                 """
             
