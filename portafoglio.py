@@ -36,7 +36,7 @@ def Portafoglio():
         .card-container {
             border-radius: 20px;
             padding: 20px;
-            height: 350px; /* ALTEZZA AGGIORNATA A 350PX */
+            height: 350px; 
             display: flex;
             flex-direction: column;
             box-shadow: 2px 2px 12px rgba(0,0,0,0.4);
@@ -52,12 +52,12 @@ def Portafoglio():
         .card-coming { background-color: #eeeeee; border: 1px solid #bdbdbd; }
 
         .card-title {
-            font-size: 1.5rem; /* TITOLO INGRANDITO */
+            font-size: 1.4rem; 
             font-weight: 900;
             text-transform: uppercase;
             margin-bottom: 10px;
             color: #1b5e20;
-            line-height: 1.2;
+            line-height: 1.1;
         }
         
         .card-body-text {
@@ -70,16 +70,14 @@ def Portafoglio():
             font-size: 0.8rem;
             color: #555;
             margin-top: 5px;
-            font-style: italic;
         }
 
-        /* LOGO LARGHEZZA 200PX */
-        .card-img-vincos {
+        /* LOGO LARGHEZZA 200PX - Altezza massima per sicurezza */
+        .card-img-dinamica {
             width: 200px !important;
-            height: auto !important;
-            max-height: 100px;
+            max-height: 110px;
             object-fit: contain;
-            margin-top: auto; /* Ancorato al fondo */
+            margin-top: auto; 
             align-self: center;
         }
 
@@ -100,13 +98,16 @@ def Portafoglio():
     """, unsafe_allow_html=True)
 
     cols = st.columns(3)
-    url_img = "https://vincos.it/wp-content/uploads/2026/02/vincos-logo.png"
+    logo_default = "https://vincos.it/wp-content/uploads/2026/02/vincos-logo.png"
     
     for i, (q_id, info) in enumerate(quiz_info.items()):
         with cols[i % 3]:
             st.markdown('<div class="card-anchor"></div>', unsafe_allow_html=True)
             
-            unita = "Qwat" if q_id == 2 else "Punti" #
+            # Recupero il logo specifico dal file corsi.py, altrimenti uso quello default
+            logo_corso = info.get('logo', logo_default)
+            
+            unita = "Qwat" if q_id == 2 else "Punti"
 
             if q_id > 5:
                 # BOX COMING SOON
@@ -114,9 +115,9 @@ def Portafoglio():
                 <div class="card-container card-coming">
                     <div class="card-title" style="color: #666;">🕒 COMING SOON</div>
                     <div class="card-body-text">
-                        Modulo in fase di sviluppo.<br>Aggiornamento previsto a breve.
+                        Modulo in fase di sviluppo.<br>Specifiche tecniche in arrivo.
                     </div>
-                    <img src="{url_img}" class="card-img-vincos">
+                    <img src="{logo_corso}" class="card-img-dinamica">
                     <div class="punti-badge" style="color: #777;">+0 {unita}</div>
                 </div>
                 """
@@ -136,7 +137,7 @@ def Portafoglio():
                     <div class="card-stats-mini">
                         👥 Utenti: {n_utenti} | 🕒 Update: {info.get("data_mod", "N/D")}
                     </div>
-                    <img src="{url_img}" class="card-img-vincos">
+                    <img src="{logo_corso}" class="card-img-dinamica">
                 </div>
                 """
             
