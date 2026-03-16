@@ -6,14 +6,15 @@ def Portafoglio():
     ss = st.session_state
     
     # --- TESTATA ---
+    # Forziamo il bianco per l'intestazione sopra lo sfondo scuro della app
     st.markdown("""
         <style>
-        .white-text { color: white !important; }
+        .white-text { color: white !important; font-family: sans-serif; }
+        .stMarkdown hr { border-top: 1px solid #444 !important; }
         </style>
         <h2 class="white-text">📂 PORTAFOGLIO COMPETENZE ASTRO-NAVALI</h2>
     """, unsafe_allow_html=True)
     
-    # Gestione Admin/Cadetto senza Vincos
     nome_attuale = ss.get('nome', '')
     if nome_attuale and nome_attuale.lower() != "vincos":
         st.markdown(f'<p class="white-text">👤 <b>Cadetto:</b> {nome_attuale}</p>', unsafe_allow_html=True)
@@ -25,99 +26,123 @@ def Portafoglio():
     quiz_info = getattr(corsi, 'QUIZ_DATI', {})
     df_utenti = ss.get('db', pd.DataFrame())
 
-    # --- CSS DEFINITIVO: DIMENSIONI UNIFICATE E TESTO ---
+    # --- CSS: UNICO BOX SOLIDO ---
     st.markdown("""
         <style>
-        /* Selettore per BOX ATTIVI (Verde) e COMING SOON (Grigio) */
-        /* Agiamo sul contenitore principale per evitare il doppio quadro */
-        
-        [data-testid="stVerticalBlock"] > div:has(div.badge-marker),
-        [data-testid="stVerticalBlock"] > div:has(div.coming-soon-marker) {
-            border-radius: 25px !important;
-            padding: 0px !important; /* Rimuoviamo padding esterno per unire i quadri */
-            min-height: 500px !important; /* DIMENSIONE Y FISSA */
-            display: flex;
-            flex-direction: column;
-            border: 2px solid #c8e6c9 !important;
-            box-shadow: 3px 3px 12px rgba(0,0,0,0.2) !important;
+        /* Rimuoviamo lo stile di default dei container di Streamlit per questa pagina */
+        [data-testid="stVerticalBlock"] > div:has(div.card-anchor) {
+            background-color: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            padding: 0 !important;
         }
 
-        /* Colore sfondo specifico per i due tipi */
-        [data-testid="stVerticalBlock"] > div:has(div.badge-marker) {
-            background-color: #e8f5e9 !important; 
-        }
-        [data-testid="stVerticalBlock"] > div:has(div.coming-soon-marker) {
-            background-color: #eeeeee !important;
-            border-color: #bdbdbd !important;
-        }
-
-        /* Reset testi per leggibilità interna */
-        .card-body {
-            padding: 25px;
-            color: #1a1a1a !important;
-            height: 100%;
+        .card-container {
+            border-radius: 25px;
+            padding: 30px;
+            height: 500px; /* ALTEZZA FISSA 500PX */
             display: flex;
             flex-direction: column;
+            box-shadow: 4px 4px 15px rgba(0,0,0,0.3);
+            margin-bottom: 20px;
+            font-family: sans-serif;
+            box-sizing: border-box;
         }
-        
-        .badge-title, .coming-soon-title {
-            font-size: 1.2rem;
+
+        .card-active {
+            background-color: #e8f5e9; /* Verde Chiaro */
+            border: 2px solid #c8e6c9;
+        }
+
+        .card-coming {
+            background-color: #eeeeee; /* Grigio */
+            border: 2px solid #bdbdbd;
+        }
+
+        .card-title {
+            font-size: 1.3rem;
             font-weight: 800;
             text-align: center;
             text-transform: uppercase;
-            margin-bottom: 15px;
-            color: #1b5e20 !important;
+            margin-bottom: 20px;
         }
-        .coming-soon-title { color: #424242 !important; }
+        
+        .card-active .card-title { color: #1b5e20; }
+        .card-coming .card-title { color: #424242; }
 
-        .punti-val {
-            color: #2e7d32 !important;
-            font-weight: 900;
-            font-size: 1.4rem;
-            text-align: right;
-            margin-top: auto; /* Spinge in fondo al box */
-            padding-top: 10px;
+        .card-body-text {
+            color: #1a1a1a !important;
+            font-size: 1rem;
+            line-height: 1.5;
+            flex-grow: 1;
         }
+
+        .card-footer-stats {
+            color: #444;
+            font-size: 0.9rem;
+            border-top: 1px solid rgba(0,0,0,0.1);
+            padding-top: 15px;
+            margin-top: 15px;
+        }
+
+        .punti-label {
+            font-weight: 900;
+            font-size: 1.5rem;
+            text-align: right;
+            margin-top: 10px;
+        }
+        .card-active .punti-label { color: #2e7d32; }
+        .card-coming .punti-label { color: #757575; }
         </style>
     """, unsafe_allow_html=True)
 
+    # --- GRIGLIA A 3 COLONNE ---
     cols = st.columns(3)
     
     for i, (q_id, info) in enumerate(quiz_info.items()):
         with cols[i % 3]:
-            with st.container():
-                if q_id > 5:
-                    st.markdown('<div class="coming-soon-marker"></div>', unsafe_allow_html=True)
-                    # Tutto il contenuto dentro un div "card-body" per gestire il padding unico
-                    st.markdown(f"""
-                        <div class="card-body">
-                            <div class="coming-soon-title">🕒 COMING SOON!</div>
-                            <hr style="border-top: 1px solid #bbb;">
-                            <p>🚀 <b>Moduli futuri</b><br>In fase di caricamento nei database della flotta.</p>
-                            <div class="punti-val">+0 Punti</div>
-                        </div>
-                    """, unsafe_allow_html=True)
-                else:
-                    st.markdown('<div class="badge-marker"></div>', unsafe_allow_html=True)
-                    
-                    # Calcolo utenti
-                    col_p = f"punteggio{q_id}"
-                    n_utenti = len(df_utenti[df_utenti[col_p] > 0]) if not df_utenti.empty and col_p in df_utenti.columns else 0
-                    unita = "Qwat" if q_id == 2 else "Punti"
+            # Marker per "ancorare" il CSS
+            st.markdown('<div class="card-anchor"></div>', unsafe_allow_html=True)
+            
+            if q_id > 5:
+                # BOX COMING SOON (Grigio, 500px)
+                html_card = f"""
+                <div class="card-container card-coming">
+                    <div class="card-title">🕒 COMING SOON!</div>
+                    <div class="card-body-text">
+                        <p>🚀 <b>Moduli in arrivo</b><br>
+                        Le specifiche tecniche per questo addestramento sono in fase di validazione presso il Comando di Flotta.</p>
+                    </div>
+                    <div class="card-footer-stats">
+                        Status: Sincronizzazione...
+                    </div>
+                    <div class="punti-label">+0 Punti</div>
+                </div>
+                """
+            else:
+                # BOX ATTIVO (Verde, 500px)
+                col_p = f"punteggio{q_id}"
+                n_utenti = len(df_utenti[df_utenti[col_p] > 0]) if not df_utenti.empty and col_p in df_utenti.columns else 0
+                unita = "Qwat" if q_id == 2 else "Punti"
 
-                    st.markdown(f"""
-                        <div class="card-body">
-                            <div class="badge-title">⭐ {info.get("nome", "").upper()}</div>
-                            <p><b>Sponsor:</b> {info.get("sponsor", "N/D")}<br>
-                            <b>Premio:</b> {info.get("premio", "N/D")}</p>
-                            <hr style="border-top: 1px solid #c8e6c9;">
-                            <p style="font-size: 0.9rem;">👥 <b>Utenti:</b> {n_utenti}<br>
-                            🕒 <b>Update:</b> {info.get("data_mod", "N/D")}</p>
-                            <div class="punti-val">+100 {unita}</div>
-                        </div>
-                    """, unsafe_allow_html=True)
+                html_card = f"""
+                <div class="card-container card-active">
+                    <div class="card-title">⭐ {info.get("nome", "").upper()}</div>
+                    <div class="card-body-text">
+                        <p><b>Sponsor:</b> {info.get("sponsor", "N/D")}<br>
+                        <b>Premio:</b> {info.get("premio", "N/D")}</p>
+                    </div>
+                    <div class="card-footer-stats">
+                        👥 <b>Utenti:</b> {n_utenti}<br>
+                        🕒 <b>Update:</b> {info.get("data_mod", "N/D")}
+                    </div>
+                    <div class="punti-label">+100 {unita}</div>
+                </div>
+                """
+            
+            st.markdown(html_card, unsafe_allow_html=True)
 
     st.markdown("---")
     if st.button("« TORNA AL PANNELLO AMMINISTRATORE", use_container_width=True):
-        st.session_state.schermata = "admin"
+        ss.schermata = "admin"
         st.rerun()
