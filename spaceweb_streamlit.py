@@ -780,20 +780,22 @@ def schermata_gioco():
                     unsafe_allow_html=True)
 
 # ============================================================
-# ROUTER DEFINITIVO (Scrivilo a inizio riga, senza spazi!)
+# ROUTER CORRETTO - 16/03/26
 # ============================================================
-schermata_attuale = st.session_state.get("schermata", "login")
+schermata_da_mostrare = st.session_state.get("schermata", "login")
 
-if schermata_attuale == "login":
+if schermata_da_mostrare == "login":
     schermata_login()
-elif schermata_attuale == "admin":
+elif schermata_da_mostrare == "admin":
     schermata_admin()
-elif schermata_attuale == "quiz":
+elif schermata_da_mostrare == "quiz":
     schermata_quiz()
-elif schermata_attuale == "gioco":
+elif schermata_da_mostrare == "gioco":
     schermata_gioco()
-elif schermata_attuale == "portafoglio":
-    Portafoglio()
-    schermata_gioco()
-elif schermata == "portafoglio":
-    Portafoglio()
+elif schermata_da_mostrare == "portafoglio":
+    # Richiama la funzione dal file portafoglio.py
+    Portafoglio() 
+    # Pulsante di emergenza per tornare indietro se il file portafoglio non lo ha
+    if st.button("« Torna al Pannello Admin"):
+        st.session_state.schermata = "admin"
+        st.rerun()
