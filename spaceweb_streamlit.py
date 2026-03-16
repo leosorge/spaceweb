@@ -33,10 +33,10 @@ st.set_page_config(
 
 # Caricamento del CSS dal file esterno
 try:
-    with open("space_theme.css", "r") as f:
+    with open("assets/css/space_theme.css", "r") as f:
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 except FileNotFoundError:
-    st.error("⚠️ Attenzione: file space_theme.css non trovato!")
+    st.error("⚠️ Il sistema non trova il file CSS in assets/css/")    
     
 # ============================================================
 # COSTANTI REGOLO
