@@ -2,14 +2,54 @@
 #  CORSI — Domande e nomi dei quiz
 # ============================================================
 
-QUIZ_NOMI = {
-    1: "Sicurezza LLM",
-    2: "QuantumVerse",
-    3: "Terre Rare",
-    4: "Public Speaking CVD",
-    5: "Midjourney by Vincos",
-    6: "Quiz 6",
-    7: "Quiz 7",
+# ============================================================
+#  CORSI — Catalogo Missioni, Sponsor e Premi
+# ============================================================
+# [2026-03-16] Modifica: Aggiunta metadati Sponsor e Premio per Portafoglio
+
+QUIZ_DATI = {
+    1: {
+        "nome": "Sicurezza LLM",
+        "sponsor": "CyberGuard Italia",
+        "premio": "Accesso Alpha Server",
+        "data_mod": "10/03/26"
+    },
+    2: {
+        "nome": "QuantumVerse",
+        "sponsor": "Quantum Lab",
+        "premio": "Visore VR",
+        "data_mod": "15/01/26"
+    },
+    3: {
+        "nome": "Terre Rare",
+        "sponsor": "EcoMinerals",
+        "premio": "Kit Sostenibilità",
+        "data_mod": "20/02/26"
+    },
+    4: {
+        "nome": "Public Speaking CVD",
+        "sponsor": "Vincos Academy",
+        "premio": "Badge Relatore Pro",
+        "data_mod": "16/03/26"
+    },
+    5: {
+        "nome": "Midjourney by Vincos",
+        "sponsor": "Visionary Lab",
+        "premio": "Prompt Kit Oro",
+        "data_mod": "16/03/26"
+    },
+    6: {
+        "nome": "Quiz 6",
+        "sponsor": "TBD",
+        "premio": "Coming Soon",
+        "data_mod": "00/00/00"
+    },
+    7: {
+        "nome": "Quiz 7",
+        "sponsor": "TBD",
+        "premio": "Coming Soon",
+        "data_mod": "00/00/00"
+    }
 }
 
 DOMANDE = {
