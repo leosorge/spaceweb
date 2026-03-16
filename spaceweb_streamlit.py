@@ -680,7 +680,11 @@ def schermata_gioco():
     with col_mappa:
         st.markdown('<div class="section-title">🌌 GALAXY VIEW</div>', unsafe_allow_html=True)
         buf = disegna_griglia()
-        st.image(buf.read(), width="stretch")
+        img_b64 = base64.b64encode(buf.read()).decode("utf-8")
+        st.markdown(
+            f'<img src="data:image/png;base64,{img_b64}" style="width:500px;"/>',
+            unsafe_allow_html=True
+        )
 
     with col_status:
         st.markdown('<div class="section-title">🚀 SHIP STATUS</div>', unsafe_allow_html=True)
