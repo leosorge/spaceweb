@@ -18,6 +18,8 @@ import io
 import os
 # [SUPABASE] Libreria client ufficiale — installa con: pip install supabase
 from supabase import create_client, Client
+# modifica del 16/03
+from portafoglio import Portafoglio
 
 # ============================================================
 # CONFIGURAZIONE PAGINA
@@ -94,6 +96,7 @@ st.markdown("""
         box-shadow: 0 0 16px rgba(0,255,136,0.4);
         border-color: #00ff88;
     }
+    
 
     /* Card metriche */
     .metric-box {
@@ -770,21 +773,35 @@ def schermata_login():
                 st.rerun()
 
 # ============================================================
-# SCHERMATA ADMIN
+# SCHERMATA ADMIN - modificata 16/03/26
 # ============================================================
 def schermata_admin():
     mostra_testata()
     st.markdown("### 🔐 PANNELLO AMMINISTRATORE")
+    
+    # Visualizzazione Tabella dati da Supabase
     st.dataframe(st.session_state.db, use_container_width=True)
-    if st.session_state.nome:
-        if st.button("← Torna al gioco"):
-            st.session_state.schermata = "gioco"
+    
+    st.markdown("---") # Separatore visivo
+    
+    # Creazione di due colonne per i pulsanti di navigazione
+    col_admin1, col_admin2 = st.columns(2)
+    
+    with col_admin1:
+        if st.session_state.nome:
+            if st.button("← Torna al gioco", use_container_width=True):
+                st.session_state.schermata = "gioco"
+                st.rerun()
+        else:
+            if st.button("← Torna al Login", use_container_width=True):
+                st.session_state.schermata = "login"
+                st.rerun()
+                
+    with col_admin2:
+        # Pulsante per accedere alla nuova funzione in portafoglio.py
+        if st.button("📂 Visualizza Portafoglio", type="primary", use_container_width=True):
+            st.session_state.schermata = "portafoglio"
             st.rerun()
-    else:
-        if st.button("← Torna al Login"):
-            st.session_state.schermata = "login"
-            st.rerun()
-
 # ============================================================
 # SCHERMATA QUIZ  (7 quiz, griglia 3+2+2)
 # ============================================================
@@ -994,15 +1011,12 @@ def schermata_gioco():
                     unsafe_allow_html=True)
 
 # ============================================================
-# ROUTER
+# ROUTER 16/03/26
 # ============================================================
 schermata = st.session_state.schermata
 
-if schermata == "login":
-    schermata_login()
-elif schermata == "admin":
-    schermata_admin()
-elif schermata == "quiz":
-    schermata_quiz()
-elif schermata == "gioco":
-    schermata_gioco()
+if     schermata == "login":       schermata_login()
+elif   schermata == "admin":       schermata_admin()
+elif   schermata == "quiz":        schermata_quiz()
+elif   schermata == "gioco":       schermata_gioco()
+elif   schermata == "portafoglio": Portafoglio() # <--- SOSTITUISCE IL TUO IF SEPARATO
