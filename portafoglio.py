@@ -185,6 +185,6 @@ def Portafoglio():
             st.markdown(html_card, unsafe_allow_html=True)
 
     st.markdown("---")
-    if st.button("« TORNA AL PANNELLO AMMINISTRATORE", use_container_width=True):
+    if st.button("« TORNA AL PANNELLO AMMINISTRATORE", width="stretch"):
         ss.schermata = "admin"
         st.rerun()
