@@ -443,7 +443,7 @@ def disegna_griglia():
     ax.set_xticks(range(10))
     ax.set_yticks(range(10))
     ax.tick_params(colors='#334466', labelsize=8)
-    ax.grid(True, linestyle='-', linewidth=0.6, alpha=0.4, color='#1a2a44')
+    ax.grid(True, linestyle='-', linewidth=1, alpha=0.4, color='#1a2a44')
 
     # Immagine di sfondo
     bg_path = "p_background.png"
@@ -655,7 +655,27 @@ def schermata_quiz():
         if st.button("← Torna al gioco"):
             ss.schermata = "gioco"; st.rerun()
         return
+# --- NUOVE AGGIUNTE DEL 16/03/26 ---
+    
+    # 1. Recupero ID sicuro (risolve il KeyError)
+    try:
+        id_quiz = int(ss.quiz_tipo)
+    except:
+        id_quiz = ss.quiz_tipo
 
+    # 2. Controllo se il quiz esiste
+    if id_quiz not in DOMANDE:
+        st.error(f"🛸 Errore: Il quiz {id_quiz} non esiste nel database.")
+        if st.button("Torna alla selezione", width='stretch'):
+            ss.quiz_tipo = None
+            st.rerun()
+        return
+
+    # 3. Se tutto ok, carica le domande
+    domande = DOMANDE[id_quiz]
+    
+    # Qui prosegue il tuo codice originale che mostra la domanda attuale
+    # es: q = domande[ss.quiz_idx]
     domande = DOMANDE[ss.quiz_tipo]
 
     # Quiz finito
