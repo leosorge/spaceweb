@@ -23,7 +23,7 @@ QUIZ_DATI = {
         "sponsor": "EcoMinerals",
         "premio": "Kit Sostenibilità",
         "data_mod": "20/02/26",
-        "logo": "https://vincos.it/wp-content/uploads/2026/02/vincos-logo.png" # <--- AGGIUNTO QUI
+        "logo": "https://onewedge.com/wp-content/uploads/2023/12/new-header-3.png" # <--- AGGIUNTO QUI
     },
     4: {
         "nome": "Public Speaking CVD",
