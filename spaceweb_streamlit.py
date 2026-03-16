@@ -1,5 +1,5 @@
 # ============================================================
-#  🚀 SPACE WEB — Streamlit version - 16/03/26 19:00
+#  🚀 SPACE WEB — Streamlit version
 #  Avvio: streamlit run spaceweb_streamlit.py
 # ============================================================
 
@@ -391,7 +391,7 @@ def disegna_griglia():
     ax.set_xticks(range(10))
     ax.set_yticks(range(10))
     ax.tick_params(colors='#334466', labelsize=8)
-    ax.grid(True, linestyle='-', linewidth=1.5, alpha=0.8, color='#3a5a88')
+    ax.grid(True, linestyle='-', linewidth=1, alpha=0.4, color='#1a2a44')
 
     bg_path = "p_background.png"
     if os.path.exists(bg_path):
@@ -455,7 +455,7 @@ def disegna_griglia():
     ax.invert_yaxis()
 
     buf = io.BytesIO()
-    plt.savefig(buf, format='png', dpi=80, bbox_inches='tight',
+    plt.savefig(buf, format='png', dpi=115, bbox_inches='tight',
                 facecolor='#02040f')
     plt.close(fig)
     buf.seek(0)
@@ -466,11 +466,11 @@ def disegna_griglia():
 # ============================================================
 def mostra_testata():
     titolo_hover = (
-    "Missione: andare da 0,0 a 9,9 affrontando&#10;"
-    "nemico, mine, tempeste e quiz,&#10;"
-    "passando per i 3 punti verdi iniziali&#10;"
-    "per ottenere il riconoscimento del premio."
-)
+        "Missione: andare da 0,0 a 9,9 affrontando&#10;"
+        "nemico, mine, tempeste e quiz,&#10;"
+        "passando per i 3 punti verdi iniziali&#10;"
+        "per ottenere il riconoscimento del premio."
+    )
     img_path = os.path.join(os.path.dirname(__file__), "q_title.png")
     if os.path.exists(img_path):
         try:
@@ -492,7 +492,6 @@ def mostra_testata():
             unsafe_allow_html=True,
         )
     else:
-        # Fallback testo se l'immagine non esiste — il tooltip è comunque sul titolo
         st.markdown(
             f'<h1 title="{titolo_hover}" style="margin-top:0.2rem;">🚀 SPACE WEB</h1>',
             unsafe_allow_html=True
@@ -675,17 +674,12 @@ def schermata_gioco():
 
     mostra_testata()
 
-    col_mappa, col_status = st.columns([4, 1.2])
+    col_mappa, col_status = st.columns([3, 1.2])
 
     with col_mappa:
         st.markdown('<div class="section-title">🌌 GALAXY VIEW</div>', unsafe_allow_html=True)
         buf = disegna_griglia()
-        img_b64 = base64.b64encode(buf.read()).decode("utf-8")
-        st.markdown(
-            f'<img src="data:image/png;base64,{img_b64}" '
-            f'style="width:100%; display:block; margin-left:0;"/>',
-            unsafe_allow_html=True
-        )
+        st.image(buf.read(), width="stretch")
 
     with col_status:
         st.markdown('<div class="section-title">🚀 SHIP STATUS</div>', unsafe_allow_html=True)
