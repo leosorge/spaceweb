@@ -472,7 +472,7 @@ def mostra_testata():
             b64 = base64.b64encode(f.read()).decode("utf-8")
         # Immagine larghezza 100%, tooltip missione sul mouseover, nessun testo visibile
         st.markdown(
-            f'<div title="{titolo_hover}" style="width:100%; margin-bottom:0.5rem;">'
+            f'<div title="{titolo_hover}" style="width:200%; margin-bottom:0.5rem; overflow:visible;">'
             f'<img src="data:image/png;base64,{b64}" '
             f'style="width:200%; display:block; max-width:200%; margin-left:0;"/>'
             f'</div>',
