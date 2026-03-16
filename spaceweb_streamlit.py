@@ -1,5 +1,5 @@
 # ============================================================
-#  🚀 SPACE WEB — Streamlit version
+#  🚀 SPACE WEB — Streamlit version - 16/03/26 19:00
 #  Avvio: streamlit run spaceweb_streamlit.py
 # ============================================================
 
@@ -470,16 +470,20 @@ def mostra_testata():
     if os.path.exists(img_path):
         with open(img_path, "rb") as f:
             b64 = base64.b64encode(f.read()).decode("utf-8")
+        # Immagine larghezza 100%, tooltip missione sul mouseover, nessun testo visibile
         st.markdown(
-            f'<div title="{titolo_hover}" style="width:100%;"><img src="data:image/png;base64,{b64}" style="width:100%; display:block;"/></div>',
+            f'<div title="{titolo_hover}" style="width:100%; margin-bottom:0.5rem;">'
+            f'<img src="data:image/png;base64,{b64}" '
+            f'style="width:100%; display:block; max-width:100%;"/>'
+            f'</div>',
             unsafe_allow_html=True,
         )
     else:
+        # Fallback testo se l'immagine non esiste — il tooltip è comunque sul titolo
         st.markdown(
             f'<h1 title="{titolo_hover}" style="margin-top:0.2rem;">🚀 SPACE WEB</h1>',
             unsafe_allow_html=True
         )
-    st.caption(f"🎯 {MISSIONE_TESTO}")
 
 # ============================================================
 # SCHERMATA LOGIN
@@ -663,7 +667,7 @@ def schermata_gioco():
     with col_mappa:
         st.markdown('<div class="section-title">🌌 GALAXY VIEW</div>', unsafe_allow_html=True)
         buf = disegna_griglia()
-        st.image(buf, width="stretch")
+        st.image(buf.read(), use_container_width=True)
 
     with col_status:
         st.markdown('<div class="section-title">🚀 SHIP STATUS</div>', unsafe_allow_html=True)
@@ -728,38 +732,45 @@ def schermata_gioco():
 
     with col_nav:
         st.markdown('<div class="section-title">🕹 NAVIGAZIONE</div>', unsafe_allow_html=True)
-        st.caption("Premi un tasto X (0-9) e un tasto Y (0-9): la mossa parte automaticamente.")
+        st.caption("Spostamento relativo: scegli ΔX poi ΔY. La mossa parte automaticamente.")
 
-        st.markdown("**X target (0-9)**")
-        x_cols = st.columns(10)
+        # Valori relativi -5…+5 (saltiamo lo 0 — non ha senso spostarsi di 0)
+        STEPS = [-5, -4, -3, -2, -1, +1, +2, +3, +4, +5]
+
+        st.markdown("**ΔX (spostamento orizzontale)**")
+        x_cols = st.columns(len(STEPS))
         x_pressed = False
-        for i in range(10):
-            with x_cols[i]:
-                if st.button(str(i), key=f"btn_x_{i}", width="stretch"):
-                    ss.nav_target_x = i
+        for col, val in zip(x_cols, STEPS):
+            with col:
+                label = f"+{val}" if val > 0 else str(val)
+                if st.button(label, key=f"btn_x_{val}", width="stretch"):
+                    ss.nav_target_x = val   # ora è già un delta
                     ss.nav_x_selected = True
                     x_pressed = True
 
-        st.markdown("**Y target (0-9)**")
-        y_cols = st.columns(10)
+        st.markdown("**ΔY (spostamento verticale)**")
+        y_cols = st.columns(len(STEPS))
         y_pressed = False
-        for i in range(10):
-            with y_cols[i]:
-                if st.button(str(i), key=f"btn_y_{i}", width="stretch"):
-                    ss.nav_target_y = i
+        for col, val in zip(y_cols, STEPS):
+            with col:
+                label = f"+{val}" if val > 0 else str(val)
+                if st.button(label, key=f"btn_y_{val}", width="stretch"):
+                    ss.nav_target_y = val   # ora è già un delta
                     ss.nav_y_selected = True
                     y_pressed = True
 
-        stato_x = f"X={ss.nav_target_x} ✅" if ss.nav_x_selected else "X=—"
-        stato_y = f"Y={ss.nav_target_y} ✅" if ss.nav_y_selected else "Y=—"
+        stato_x = f"ΔX={ss.nav_target_x:+d} ✅" if ss.nav_x_selected else "ΔX=—"
+        stato_y = f"ΔY={ss.nav_target_y:+d} ✅" if ss.nav_y_selected else "ΔY=—"
+        dest_x  = ss.pos[0] + ss.nav_target_x if ss.nav_x_selected else "?"
+        dest_y  = ss.pos[1] + ss.nav_target_y if ss.nav_y_selected else "?"
         st.markdown(
-            f"📍 Selezione: **{stato_x} | {stato_y}**  "+
+            f"📍 **{stato_x} | {stato_y}** → destinazione: **({dest_x}, {dest_y})**  \n"
             f"Posizione attuale: **({ss.pos[0]}, {ss.pos[1]})**"
         )
 
         if (x_pressed or y_pressed) and ss.nav_x_selected and ss.nav_y_selected:
-            dx = ss.nav_target_x - ss.pos[0]
-            dy = ss.nav_target_y - ss.pos[1]
+            dx = ss.nav_target_x   # già relativo
+            dy = ss.nav_target_y
             ss.nav_x_selected = False
             ss.nav_y_selected = False
             esegui_mossa(dx, dy)
