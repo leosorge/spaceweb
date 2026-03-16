@@ -382,7 +382,7 @@ def esegui_mossa(dx, dy):
 # ============================================================
 def disegna_griglia():
     ss  = st.session_state
-    fig = plt.figure(figsize=(7, 7))
+    fig = plt.figure(figsize=(5, 5))
     fig.patch.set_facecolor('#02040f')
     ax  = fig.add_axes([0.06, 0.04, 0.91, 0.93])
     ax.set_facecolor('#030612')
@@ -391,7 +391,7 @@ def disegna_griglia():
     ax.set_xticks(range(10))
     ax.set_yticks(range(10))
     ax.tick_params(colors='#334466', labelsize=8)
-    ax.grid(True, linestyle='-', linewidth=1, alpha=0.4, color='#1a2a44')
+    ax.grid(True, linestyle='-', linewidth=1.5, alpha=0.8, color='#3a5a88')
 
     bg_path = "p_background.png"
     if os.path.exists(bg_path):
