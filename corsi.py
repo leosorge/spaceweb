@@ -8,43 +8,50 @@ QUIZ_DATI = {
         "nome": "Sicurezza LLM",
         "sponsor": "CyberGuard Italia",
         "premio": "Accesso Alpha Server",
-        "data_mod": "10/03/26"
+        "data_mod": "10/03/26",
+        "logo": "https://vincos.it/wp-content/uploads/2026/02/vincos-logo.png" # <--- AGGIUNTO QUI
     },
     2: {
         "nome": "QuantumVerse",
         "sponsor": "Quantum Lab",
         "premio": "Visore VR",
-        "data_mod": "15/01/26"
+        "data_mod": "15/01/26",
+        "logo": "https://vincos.it/wp-content/uploads/2026/02/vincos-logo.png" # <--- AGGIUNTO QUI
     },
     3: {
         "nome": "Terre Rare",
         "sponsor": "EcoMinerals",
         "premio": "Kit Sostenibilità",
-        "data_mod": "20/02/26"
+        "data_mod": "20/02/26",
+        "logo": "https://vincos.it/wp-content/uploads/2026/02/vincos-logo.png" # <--- AGGIUNTO QUI
     },
     4: {
         "nome": "Public Speaking CVD",
         "sponsor": "Vincos Academy",
         "premio": "Badge Relatore Pro",
-        "data_mod": "16/03/26"
+        "data_mod": "16/03/26",
+        "logo": "https://vincos.it/wp-content/uploads/2026/02/vincos-logo.png" # <--- AGGIUNTO QUI
     },
     5: {
         "nome": "Midjourney by Vincos",
         "sponsor": "Visionary Lab",
         "premio": "Prompt Kit Oro",
-        "data_mod": "16/03/26"
+        "data_mod": "16/03/26",
+        "logo": "https://vincos.it/wp-content/uploads/2026/02/vincos-logo.png" # <--- AGGIUNTO QUI
     },
     6: {
         "nome": "Quiz 6",
         "sponsor": "TBD",
         "premio": "Coming Soon",
-        "data_mod": "00/00/00"
+        "data_mod": "00/00/00",
+        "logo": "https://spaceweb-9dgjpsvp6rvbpwtfkujrxd.streamlit.app/~/+/media/a2c88a3daa355c35583358d77791a7b2f43269db27f7d27fda3c6020.png" # <--- AGGIUNTO QUI
     },
     7: {
         "nome": "Quiz 7",
         "sponsor": "TBD",
         "premio": "Coming Soon",
-        "data_mod": "00/00/00"
+        "data_mod": "00/00/00",
+        "logo": "https://spaceweb-9dgjpsvp6rvbpwtfkujrxd.streamlit.app/~/+/media/a2c88a3daa355c35583358d77791a7b2f43269db27f7d27fda3c6020.png" # <--- AGGIUNTO QUI
     }
 }
 
