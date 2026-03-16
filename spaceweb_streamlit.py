@@ -474,7 +474,7 @@ def mostra_testata():
         st.markdown(
             f'<div title="{titolo_hover}" style="width:100%; margin-bottom:0.5rem;">'
             f'<img src="data:image/png;base64,{b64}" '
-            f'style="width:100%; display:block; max-width:100%;"/>'
+            f'style="width:200%; display:block; max-width:200%; margin-left:0;"/>'
             f'</div>',
             unsafe_allow_html=True,
         )
@@ -667,7 +667,7 @@ def schermata_gioco():
     with col_mappa:
         st.markdown('<div class="section-title">🌌 GALAXY VIEW</div>', unsafe_allow_html=True)
         buf = disegna_griglia()
-        st.image(buf.read(), use_container_width=True)
+        st.image(buf.read(), width="stretch")
 
     with col_status:
         st.markdown('<div class="section-title">🚀 SHIP STATUS</div>', unsafe_allow_html=True)
