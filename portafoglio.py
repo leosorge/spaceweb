@@ -5,139 +5,114 @@ import pandas as pd
 def Portafoglio():
     ss = st.session_state
     
+    # --- INTESTAZIONE PULITA ---
     st.markdown("## 📂 PORTAFOGLIO COMPETENZE ASTRO-NAVALI")
-    st.markdown(f"**Cadetto:** {ss.get('nome', 'N/D')} — **ID Navale:** {ss.get('user_id', 'N/D')}")
+    
+    # Rimosso il nome fisso o indesiderato: mostra il nome solo se loggato, altrimenti Admin
+    nome_utente = ss.get('nome', '')
+    if nome_utente and nome_utente.lower() != "vincos":
+        st.markdown(f"**Cadetto:** {nome_utente}")
+    else:
+        st.markdown("**Status:** Sessione Amministratore")
     st.markdown("---")
 
-    # Recupero dati centralizzati
     quiz_info = getattr(corsi, 'QUIZ_DATI', {})
     df_utenti = ss.get('db', pd.DataFrame())
 
-    if not quiz_info:
-        st.error("⚠️ Errore: Impossibile caricare i dati dei corsi da corsi.py")
-        return
-
-    # === CSS PER SCHEDE AFFIANCATE (GRID) E TESTI GRANDI ===
+    # --- CSS CON ANGOLI STONDATI (border-radius) ---
     st.markdown("""
         <style>
-            .portfolio-grid {
-                display: grid;
-                /* Crea colonne da 300px. Se c'è spazio, ne affianca altre automaticamente */
-                grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-                gap: 20px;
-                padding: 10px 0;
-            }
-
-            .portfolio-card {
-                background-color: #ffffff;
-                border: 1px solid #e0e0e0;
-                border-radius: 12px;
-                padding: 25px;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-                transition: transform 0.2s;
-                color: #333;
-                display: flex;
-                flex-direction: column;
-                min-height: 400px;
-            }
-
-            .portfolio-card:hover {
-                transform: translateY(-5px);
-                border-color: #a33;
-            }
-
-            .portfolio-card.acquired {
-                background-color: #fdf5f5;
-                border-left: 6px solid #a33;
-            }
-
-            .card-icon {
-                font-size: 3.5rem;
-                color: #a33;
-                margin-bottom: 10px;
-            }
-
-            .card-title {
-                font-size: 1.5rem; /* Titolo molto grande */
-                font-weight: 800;
-                color: #1a1a1a;
-                margin-bottom: 15px;
-                line-height: 1.1;
-                text-transform: uppercase;
-            }
-
-            .card-info-text {
-                font-size: 1.05rem; /* Testo leggibile */
-                margin-bottom: 8px;
-                color: #444;
-            }
-
-            .card-stats-box {
-                background-color: rgba(0,0,0,0.03);
-                padding: 12px;
-                border-radius: 8px;
-                margin-top: 15px;
-                font-size: 0.95rem;
-                border: 1px solid #eee;
-            }
-
-            .card-score {
-                margin-top: auto;
-                font-size: 1.3rem;
-                font-weight: 900;
-                padding-top: 15px;
-                text-align: right;
-            }
-            
-            .qwat-color { color: #1e40af; }
-            .punti-color { color: #065f46; }
+        .portfolio-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 25px;
+            justify-content: flex-start;
+            padding: 20px 0;
+        }
+        .portfolio-card {
+            background-color: #fdf5f5; 
+            border: 1px solid #e0d0d0;
+            border-radius: 25px; /* <--- ANGOLI MOLTO STONDATI */
+            padding: 30px;
+            width: 320px;
+            min-height: 400px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 6px 6px 15px rgba(0,0,0,0.07);
+            transition: transform 0.3s ease;
+        }
+        .portfolio-card:hover {
+            transform: scale(1.02);
+            border-color: #a33;
+        }
+        .card-icon { color: #a33; font-size: 3.5rem; margin-bottom: 10px; text-align: center; }
+        .card-title { 
+            font-size: 1.4rem; 
+            font-weight: 800; 
+            color: #1a1a1a; 
+            margin-bottom: 20px; 
+            text-align: center;
+            line-height: 1.2;
+        }
+        .card-info { font-size: 1.05rem; margin-bottom: 8px; color: #444; }
+        .card-stats { 
+            background: rgba(255,255,255,0.6); 
+            padding: 15px; 
+            border-radius: 15px; /* Angoli stondati anche per il box interno */
+            margin-top: 20px;
+            font-size: 0.9rem;
+            border: 1px solid #eee;
+        }
+        .card-score { 
+            margin-top: auto; 
+            text-align: right; 
+            font-weight: 900; 
+            font-size: 1.4rem; 
+            color: #a33;
+            padding-top: 15px;
+        }
         </style>
     """, unsafe_allow_html=True)
 
-    # Apertura contenitore griglia
-    st.markdown('<div class="portfolio-grid">', unsafe_allow_html=True)
-
+    # --- COSTRUZIONE GRIGLIA ---
+    # Usiamo una stringa unica per evitare che Streamlit scriva il codice a video
+    html_output = '<div class="portfolio-grid">'
+    
     for q_id, info in quiz_info.items():
-        nome_corso = info.get("nome", f"Modulo {q_id}")
+        col_p = f"punteggio{q_id}"
+        col_d = f"data{q_id}"
         
-        # --- LOGICA DATI AGGIUNTIVI ---
-        # Contiamo quanti utenti hanno un punteggio > 0 per questo quiz nel DB
-        col_quiz = f"quiz{q_id}"
-        n_giocatori = 0
+        n_utenti = 0
         ultima_data = "N/D"
         
-        if not df_utenti.empty and col_quiz in df_utenti.columns:
-            giocatori_attivi = df_utenti[df_utenti[col_quiz] > 0]
-            n_giocatori = len(giocatori_attivi)
-            # Supponendo che ci sia una colonna 'updated_at' o simile
-            if 'updated_at' in df_utenti.columns and n_giocatori > 0:
-                ultima_data = giocatori_attivi['updated_at'].max()
+        if not df_utenti.empty and col_p in df_utenti.columns:
+            n_utenti = len(df_utenti[df_utenti[col_p] > 0])
+            if n_utenti > 0 and col_d in df_utenti.columns:
+                ultima_data = df_utenti[col_d].max()
 
-        # Unità di misura
         unita = "Qwat" if q_id == 2 else "Punti"
-        classe_colore = "qwat-color" if q_id == 2 else "punti-color"
 
-        st.markdown(f"""
-            <div class="portfolio-card acquired">
-                <div class="card-icon">★</div>
-                <div class="card-title">{nome_corso}</div>
-                
-                <div class="card-info-text"><b>Sponsor:</b> {info.get('sponsor', 'N/D')}</div>
-                <div class="card-info-text"><b>Premio:</b> {info.get('premio', 'N/D')}</div>
-                
-                <div class="card-stats-box">
-                    👥 <b>Utenti:</b> {n_giocatori}<br>
-                    📅 <b>Ultimo gioco:</b> {ultima_data}<br>
-                    🕒 <b>Aggiornamento:</b> {info.get('data_mod', 'N/D')}
-                </div>
-
-                <div class="card-score {classe_colore}">
-                    +100 {unita}
-                </div>
+        html_output += f"""
+        <div class="portfolio-card">
+            <div class="card-icon">★</div>
+            <div class="card-title">{info.get('nome', '').upper()}</div>
+            <div class="card-info"><b>Sponsor:</b><br>{info.get('sponsor', 'N/D')}</div>
+            <div class="card-info"><b>Premio:</b><br>{info.get('premio', 'N/D')}</div>
+            
+            <div class="card-stats">
+                👥 <b>Utenti:</b> {n_utenti}<br>
+                📅 <b>Ultimo gioco:</b> {ultima_data}<br>
+                🕒 <b>Aggiornamento:</b> {info.get('data_mod', 'N/D')}
             </div>
-        """, unsafe_allow_html=True)
-
-    st.markdown('</div>', unsafe_allow_html=True) # Chiusura griglia
+            
+            <div class="card-score">+100 {unita}</div>
+        </div>
+        """
+    
+    html_output += '</div>'
+    
+    # Rendering finale dell'HTML
+    st.markdown(html_output, unsafe_allow_html=True)
 
     st.markdown("---")
     if st.button("« TORNA AL PANNELLO AMMINISTRATORE", use_container_width=True):
