@@ -1,26 +1,22 @@
 import streamlit as st
 
 def Portafoglio():
-    # Carichiamo QUIZ_NOMI dinamicamente solo quando la funzione viene eseguita
-    # Questo evita l'ImportError all'avvio dell'app
-    from corsi import QUIZ_NOMI 
+    # Importiamo i dati solo qui dentro, al momento del bisogno
+    import corsi
+    nomi_quiz = corsi.QUIZ_NOMI
     
     utente = st.session_state.get("nome", "Esploratore")
     st.title(f"📂 Portafoglio di {utente}")
-    st.write("Certificazioni e competenze acquisite nel sistema SpaceWeb.")
 
-    # Ciclo dinamico: se aggiungi un corso in corsi.py, apparirà qui da solo
-    for id_quiz, nome_quiz in QUIZ_NOMI.items():
+    for id_quiz, nome_quiz in nomi_quiz.items():
         with st.expander(f"🎓 {nome_quiz}"):
-            # Personalizzazione per QuantumVerse (ID 2)
             if id_quiz == 2:
+                # Utilizza la tua unità di misura personalizzata
                 st.metric(label="Punteggio", value="100 Qwat")
             else:
-                st.success("Modulo completato con successo")
-            
+                st.success("Modulo completato")
             st.progress(1.0)
 
-    st.markdown("---")
     if st.button("← Torna al Pannello Admin", use_container_width=True):
         st.session_state.schermata = "admin"
         st.rerun()
