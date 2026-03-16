@@ -473,17 +473,21 @@ def mostra_testata():
 )
     img_path = os.path.join(os.path.dirname(__file__), "q_title.png")
     if os.path.exists(img_path):
-        with open(img_path, "rb") as f:
-            img = Image.open(f)
-            w, h = img.size
-            img_grande = img.resize((w * 2, h * 2), Image.LANCZOS)
-            buf = io.BytesIO()
-            img_grande.save(buf, format="PNG")
-            b64 = base64.b64encode(buf.getvalue()).decode("utf-8")
-    st.markdown(
+        try:
+            from PIL import Image as PILImage
+            pil_img = PILImage.open(img_path)
+            w, h = pil_img.size
+            pil_img = pil_img.resize((w * 2, h * 2), PILImage.LANCZOS)
+            buf_img = io.BytesIO()
+            pil_img.save(buf_img, format="PNG")
+            b64 = base64.b64encode(buf_img.getvalue()).decode("utf-8")
+        except Exception:
+            with open(img_path, "rb") as f:
+                b64 = base64.b64encode(f.read()).decode("utf-8")
+        st.markdown(
             f'<div title="{titolo_hover}" style="margin-bottom:0.5rem;">'
             f'<img src="data:image/png;base64,{b64}" '
-            f'style="width:1600px; display:block; margin-left:0;"/>'
+            f'style="width:100%; display:block; margin-left:0;"/>'
             f'</div>',
             unsafe_allow_html=True,
         )
