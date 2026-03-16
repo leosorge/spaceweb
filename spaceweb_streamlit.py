@@ -382,7 +382,7 @@ def esegui_mossa(dx, dy):
 # ============================================================
 def disegna_griglia():
     ss  = st.session_state
-    fig = plt.figure(figsize=(5, 5))
+    fig = plt.figure(figsize=(7, 7))
     fig.patch.set_facecolor('#02040f')
     ax  = fig.add_axes([0.06, 0.04, 0.91, 0.93])
     ax.set_facecolor('#030612')
@@ -455,7 +455,7 @@ def disegna_griglia():
     ax.invert_yaxis()
 
     buf = io.BytesIO()
-    plt.savefig(buf, format='png', dpi=115, bbox_inches='tight',
+    plt.savefig(buf, format='png', dpi=80, bbox_inches='tight',
                 facecolor='#02040f')
     plt.close(fig)
     buf.seek(0)
