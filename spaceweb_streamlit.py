@@ -239,7 +239,7 @@ def nuova_partita(nome):
     st.session_state.cnt_mosse        = 0
     st.session_state.cnt_oracolo      = 0
     st.session_state.msg              = (
-        f"Benvenuto {nome}! 🎯 {MISSIONE_TESTO} ⚠️ Attenzione alla nave rossa! Scudo al 50%."
+        f"Benvenuto {nome}! ⚠️ Attenzione alla nave rossa! Scudo al 50%."
     )
     st.session_state.nav_target_x     = 0
     st.session_state.nav_target_y     = 0
