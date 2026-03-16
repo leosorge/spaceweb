@@ -14,11 +14,11 @@ def Portafoglio():
     )
 
     # --- CSS: TOOLTIP VERSO IL BASSO E LAYOUT ---
+    # Nota: Usiamo le doppie parentesi {{ }} per il CSS dentro le f-string di Python
     st.markdown(f"""
         <style>
         .white-text {{ color: white !important; font-family: sans-serif; }}
         
-        /* Contenitore del Tooltip */
         .tooltip {{
             position: relative;
             display: inline-block;
@@ -26,7 +26,6 @@ def Portafoglio():
             border-bottom: 2px dotted #4da6ff;
         }}
 
-        /* Testo del Tooltip - ORA APPARE IN BASSO */
         .tooltip .tooltiptext {{
             visibility: hidden;
             width: 450px;
@@ -37,7 +36,7 @@ def Portafoglio():
             padding: 18px;
             position: absolute;
             z-index: 9999;
-            top: 120%; /* SPOSTATO SOTTO IL TITOLO */
+            top: 130%; 
             left: 0;
             opacity: 0;
             transition: opacity 0.3s, transform 0.3s;
@@ -47,16 +46,15 @@ def Portafoglio():
             border: 1px solid #4da6ff;
             box-shadow: 0px 8px 16px rgba(0,0,0,0.6);
             transform: translateY(-10px);
+            pointer-events: none;
         }}
 
-        /* Mostra il tooltip al passaggio del mouse */
         .tooltip:hover .tooltiptext {{
             visibility: visible;
             opacity: 1;
             transform: translateY(0px);
         }}
 
-        /* Freccina del tooltip (Punta verso l'alto) */
         .tooltip .tooltiptext::after {{
             content: "";
             position: absolute;
@@ -65,9 +63,8 @@ def Portafoglio():
             border-width: 8px;
             border-style: solid;
             border-color: transparent transparent #4da6ff transparent;
-        }
+        }}
 
-        /* Stile Card */
         [data-testid="stVerticalBlock"] > div:has(div.card-anchor) {{
             background-color: transparent !important;
             border: none !important;
@@ -166,7 +163,10 @@ def Portafoglio():
                 """
             else:
                 col_p = f"punteggio{q_id}"
-                n_utenti = len(df_utenti[df_utenti[col_p] > 0]) if not df_utenti.empty and col_p in df_utenti.columns else 0
+                n_utenti = 0
+                if not df_utenti.empty and col_p in df_utenti.columns:
+                    # Protezione contro errori di tipo nel DB
+                    n_utenti = len(df_utenti[df_utenti[col_p].fillna(0) > 0])
                 
                 html_card = f"""
                 <div class="card-container card-active">
