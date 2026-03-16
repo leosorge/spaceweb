@@ -366,7 +366,12 @@ astronave_nemica_path = Path(t_n.transform(verts_p), codes_p)
 # ============================================================
 # DOMANDE QUIZ (7 quiz)
 # ============================================================
-from corsi import DOMANDE, QUIZ_NOMI
+try:
+    from corsi import DOMANDE, QUIZ_NOMI
+except ImportError:
+    # Definizione di emergenza se l'import fallisce
+    QUIZ_NOMI = {1: "Sicurezza LLM", 2: "QuantumVerse", 3: "Terre Rare"}
+    DOMANDE = {1: [], 2: [], 3: []}
 
 # ============================================================
 # SESSION STATE — inizializzazione
