@@ -1,6 +1,5 @@
 import streamlit as st
 import corsi
-import os
 
 def Portafoglio():
     ss = st.session_state
@@ -9,137 +8,116 @@ def Portafoglio():
     st.markdown(f"**Cadetto:** {ss.get('nome', 'N/D')} — **ID Navale:** {ss.get('user_id', 'N/D')}")
     st.markdown("---")
 
-    # Recuperiamo la sorgente unica dei dati
+    # Recupero dati centralizzati
     quiz_info = getattr(corsi, 'QUIZ_DATI', {})
 
     if not quiz_info:
         st.error("⚠️ Errore: Impossibile caricare i dati dei corsi da corsi.py")
         return
 
-    # === DEFINIZIONE DELLO STILE CSS PER LE CARD (BADGE) ===
-    # Questo stile crea le card quadrate, chiare, con l'effetto ombra
-    # e gestisce la transizione quando sono "acquisite" (come nell'esempio).
+    # === CSS AVANZATO PER GRIGLIA RESPONSIVE E FONT MAGGIORATI ===
     st.markdown("""
         <style>
-            /* Contenitore principale delle card */
+            /* Griglia intelligente: mette tante colonne quante ne entrano (minimo 250px l'una) */
             .portfolio-grid {
-                display: flex;
-                flex-wrap: wrap;
-                gap: 20px;
-                justify-content: center;
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+                gap: 25px;
                 padding: 20px 0;
             }
 
-            /* Stile base della Card (Badge) */
             .portfolio-card {
-                background-color: #f8f9fa; /* Sfondo chiaro come nell'esempio */
-                border: 1px solid #e0e0e0;
-                border-radius: 8px;
-                padding: 20px;
-                width: 280px; /* Larghezza fissa per renderle quadrate */
-                min-height: 280px;
+                background-color: #fdfdfd;
+                border: 1px solid #d1d5db;
+                border-radius: 12px;
+                padding: 24px;
                 text-align: center;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.05); /* Ombra leggera */
-                transition: transform 0.2s, box-shadow 0.2s;
-                color: #333; /* Testo scuro */
-                position: relative;
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+                transition: all 0.3s ease;
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+                min-height: 320px;
             }
 
-            /* Effetto Hover sulla card */
             .portfolio-card:hover {
                 transform: translateY(-5px);
-                box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+                border-color: #a33;
             }
 
-            /* Stile per quando il badge è "ACQUISITO" (come nell'esempio) */
+            /* Badge "Acquisito" (stile immagine 2) */
             .portfolio-card.acquired {
-                background-color: #fcf3f3; /* Sfondo rosato/grigio chiaro */
-                border-color: #d8c3c3;
+                background-color: #f9f0f0;
+                border-left: 5px solid #a33;
             }
 
-            /* Stile per l'Icona/Immagine (come la stella rossa) */
-            .card-icon-container {
-                margin-bottom: 15px;
-            }
             .card-icon {
-                font-size: 3rem;
-                color: #a33; /* Colore rosso scuro della stella nell'esempio */
-            }
-
-            /* Titolo del Corso */
-            .card-title {
-                font-family: 'Orbitron', sans-serif;
-                font-size: 1.2rem;
-                font-weight: 700;
-                color: #2c3e50;
-                margin-bottom: 10px;
-                text-transform: uppercase;
-            }
-
-            /* Dettagli (Sponsor e Premio) */
-            .card-details {
-                font-size: 0.85rem;
-                color: #7f8c8d;
-                line-height: 1.5;
+                font-size: 3.5rem; /* Font icona più grande */
+                color: #a33;
                 margin-bottom: 15px;
             }
-            .card-details strong {
-                color: #34495e;
+
+            .card-title {
+                font-size: 1.4rem; /* Font titolo più grande */
+                font-weight: 800;
+                color: #1f2937;
+                margin-bottom: 12px;
+                line-height: 1.2;
             }
 
-            /* Punteggio (Qwat o Punti) in basso */
+            .card-details {
+                font-size: 1rem; /* Font dettagli più grande */
+                color: #4b5563;
+                margin-bottom: 20px;
+            }
+
             .card-score {
-                font-size: 1.1rem;
+                font-size: 1.25rem; /* Font punteggio più grande */
                 font-weight: 900;
-                color: #27ae60; /* Verde per il successo */
-                margin-top: auto;
+                padding-top: 10px;
+                border-top: 1px dashed #d1d5db;
             }
-            .card-qwat {
-                color: #2980b9; /* Blu per i Qwat */
-            }
+            
+            .qwat-style { color: #2563eb; }
+            .punti-style { color: #059669; }
         </style>
     """, unsafe_allow_html=True)
 
-    # === CREAZIONE DELLA GRIGLIA DI CARD ===
+    # Apertura contenitore griglia
     st.markdown('<div class="portfolio-grid">', unsafe_allow_html=True)
 
     for q_id, info in quiz_info.items():
         nome_corso = info.get("nome", f"Modulo {q_id}")
         
-        # Logica per decidere l'icona e se il badge è acquisito
-        # (In futuro, potresti usare il DB reale per decidere)
-        is_acquired_class = "acquired" if q_id % 2 == 1 else "" # Esempio: i dispari sono acquisiti
+        # Unità di misura e stile
+        es_quantistico = (q_id == 2)
+        unita = "Qwat" if es_quantistico else "Punti"
+        classe_colore = "qwat-style" if es_quantistico else "punti-style"
         
-        # Unità di misura
-        unita = "Qwat" if q_id == 2 else "Punti"
-        score_class = "card-qwat" if q_id == 2 else ""
-
-        # Sostituisci l'emoji con un'immagine reale se preferisci (vedi nota sotto)
-        icon_html = '<span class="card-icon">★</span>' # Usiamo una stella HTML
-
-        # Costruiamo l'HTML della Card
+        # Logica estetica: usiamo 'acquired' per tutti i moduli completati nel DB
+        # Per ora lo simuliamo come nell'esempio
+        card_class = "portfolio-card acquired"
+        
         st.markdown(f"""
-            <div class="portfolio-card {is_acquired_class}">
-                <div class="card-icon-container">
-                    {icon_html}
+            <div class="{card_class}">
+                <div>
+                    <div class="card-icon">★</div>
+                    <div class="card-title">{nome_corso.upper()}</div>
+                    <div class="card-details">
+                        Sponsor: <b>{info.get('sponsor', 'N/D')}</b><br>
+                        Premio: <i>{info.get('premio', 'N/D')}</i>
+                    </div>
                 </div>
-                <div class="card-title">{nome_corso}</div>
-                <div class="card-details">
-                    <strong>Sponsor:</strong> {info.get('sponsor', 'N/D')}<br>
-                    <strong>Premio:</strong> {info.get('premio', 'N/D')}<br>
-                    <span style="font-size:0.75rem; color:#999;">Aggiornato: {info.get('data_mod', 'N/D')}</span>
-                </div>
-                <div class="card-score {score_class}">
+                <div class="card-score {classe_colore}">
                     +100 {unita}
                 </div>
             </div>
         """, unsafe_allow_html=True)
 
-    st.markdown('</div>', unsafe_allow_html=True) # Chiudiamo la griglia
+    st.markdown('</div>', unsafe_allow_html=True) # Chiusura griglia
 
     st.markdown("---")
-    
-    # Pulsante per tornare al Pannello Admin
-    if st.button("« Torna al Pannello Amministratore", use_container_width=True):
+    if st.button("« TORNA AL PANNELLO AMMINISTRATORE", use_container_width=True):
         st.session_state.schermata = "admin"
         st.rerun()
