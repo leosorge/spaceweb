@@ -502,9 +502,8 @@ def disegna_griglia():
     if ss.scudo > 0:
         ax.add_patch(plt.Circle((px, py), 0.58, color='#4499ff',
                                 alpha=scudo_alpha, zorder=5))
-        ax.add_patch(plt.Circle((px, py), 0.58, color='none',
-                                edgecolor='#88ccff', linewidth=0.8,
-                                alpha=ss.scudo / 150.0, zorder=5))
+        ax.add_patch(plt.Circle((px, py), 0.58, fill=False, 
+                                edgecolor='white', linewidth=1))
     ax.scatter(px, py, marker=astronave_path, s=600,
                color='#FFD700', edgecolor='#ff8800', linewidth=1.5, zorder=6)
 
@@ -762,7 +761,7 @@ def schermata_gioco():
         s_color = "#4499ff" if s_pct > 50 else "#8866ff" if s_pct > 20 else "#446688"
         st.markdown(f"""
         <div class="metric-box">
-            <div class="metric-label">🛡 SCUDO</div>
+            <div class="metric-label">SCUDO</div>
             <div class="metric-value" style="color:{s_color};">{ss.scudo}%</div>
         </div>
         <div class="shield-bar-container">
