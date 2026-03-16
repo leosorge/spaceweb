@@ -13,7 +13,7 @@ def Portafoglio():
         "La spinta a partecipare al quiz viene dai premi messi in palio dal cliente per chi raggiungerà l'obiettivo nella missione di un gioco spaziale."
     )
 
-    # --- CSS: TOOLTIP AVANZATO E LAYOUT ---
+    # --- CSS: TOOLTIP VERSO IL BASSO E LAYOUT ---
     st.markdown(f"""
         <style>
         .white-text {{ color: white !important; font-family: sans-serif; }}
@@ -23,49 +23,49 @@ def Portafoglio():
             position: relative;
             display: inline-block;
             cursor: help;
-            border-bottom: 1px dotted #4da6ff;
+            border-bottom: 2px dotted #4da6ff;
         }}
 
-        /* Testo del Tooltip (nascosto di default) */
+        /* Testo del Tooltip - ORA APPARE IN BASSO */
         .tooltip .tooltiptext {{
             visibility: hidden;
-            width: 400px;
-            background-color: #000000;
+            width: 450px;
+            background-color: #111111;
             color: #ffffff;
             text-align: left;
-            border-radius: 10px;
-            padding: 15px;
+            border-radius: 12px;
+            padding: 18px;
             position: absolute;
             z-index: 9999;
-            bottom: 125%; /* Appare sopra il testo */
-            left: 50%;
-            margin-left: -200px;
+            top: 120%; /* SPOSTATO SOTTO IL TITOLO */
+            left: 0;
             opacity: 0;
-            transition: opacity 0.3s;
-            font-size: 0.9rem;
+            transition: opacity 0.3s, transform 0.3s;
+            font-size: 0.95rem;
             font-weight: normal;
-            line-height: 1.4;
+            line-height: 1.5;
             border: 1px solid #4da6ff;
-            box-shadow: 0px 4px 10px rgba(0,0,0,0.5);
+            box-shadow: 0px 8px 16px rgba(0,0,0,0.6);
+            transform: translateY(-10px);
         }}
 
         /* Mostra il tooltip al passaggio del mouse */
         .tooltip:hover .tooltiptext {{
             visibility: visible;
             opacity: 1;
+            transform: translateY(0px);
         }}
 
-        /* Freccina del tooltip */
+        /* Freccina del tooltip (Punta verso l'alto) */
         .tooltip .tooltiptext::after {{
             content: "";
             position: absolute;
-            top: 100%;
-            left: 50%;
-            margin-left: -5px;
-            border-width: 5px;
+            bottom: 100%;
+            left: 30px;
+            border-width: 8px;
             border-style: solid;
-            border-color: #4da6ff transparent transparent transparent;
-        }}
+            border-color: transparent transparent #4da6ff transparent;
+        }
 
         /* Stile Card */
         [data-testid="stVerticalBlock"] > div:has(div.card-anchor) {{
