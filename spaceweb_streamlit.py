@@ -780,17 +780,20 @@ def schermata_gioco():
                     unsafe_allow_html=True)
 
 # ============================================================
-# ROUTER DEFINITIVO
+# ROUTER DEFINITIVO (Scrivilo a inizio riga, senza spazi!)
 # ============================================================
-schermata = st.session_state.schermata
+schermata_attuale = st.session_state.get("schermata", "login")
 
-if schermata == "login":
+if schermata_attuale == "login":
     schermata_login()
-elif schermata == "admin":
+elif schermata_attuale == "admin":
     schermata_admin()
-elif schermata == "quiz":
+elif schermata_attuale == "quiz":
     schermata_quiz()
-elif schermata == "gioco":
+elif schermata_attuale == "gioco":
+    schermata_gioco()
+elif schermata_attuale == "portafoglio":
+    Portafoglio()
     schermata_gioco()
 elif schermata == "portafoglio":
     Portafoglio()
