@@ -746,40 +746,33 @@ def schermata_gioco():
         # ── NAVIGAZIONE ──────────────────────────────────────────────────
         st.markdown('<div class="section-title" style="margin-top:1rem; font-size:1rem;">🕹 NAVIGAZIONE</div>',
                     unsafe_allow_html=True)
-        st.caption("Scegli ΔX poi ΔY. La mossa parte automaticamente.")
-
         STEPS = [-5, -4, -3, -2, -1, +1, +2, +3, +4, +5]
 
-        st.markdown("**ΔX**")
-        x_cols = st.columns(len(STEPS))
+        # ΔX label + 10 tasti sulla stessa riga
         x_pressed = False
-        for col, val in zip(x_cols, STEPS):
-            with col:
+        x_row = st.columns([1] + [1]*len(STEPS))
+        with x_row[0]:
+            st.markdown("**ΔX**")
+        for i, val in enumerate(STEPS):
+            with x_row[i+1]:
                 label = f"+{val}" if val > 0 else str(val)
                 if st.button(label, key=f"btn_x_{val}", width="stretch"):
                     ss.nav_target_x = val
                     ss.nav_x_selected = True
                     x_pressed = True
 
-        st.markdown("**ΔY**")
-        y_cols = st.columns(len(STEPS))
+        # ΔY label + 10 tasti sulla stessa riga
         y_pressed = False
-        for col, val in zip(y_cols, STEPS):
-            with col:
+        y_row = st.columns([1] + [1]*len(STEPS))
+        with y_row[0]:
+            st.markdown("**ΔY**")
+        for i, val in enumerate(STEPS):
+            with y_row[i+1]:
                 label = f"+{val}" if val > 0 else str(val)
                 if st.button(label, key=f"btn_y_{val}", width="stretch"):
                     ss.nav_target_y = val
                     ss.nav_y_selected = True
                     y_pressed = True
-
-        stato_x = f"ΔX={ss.nav_target_x:+d} ✅" if ss.nav_x_selected else "ΔX=—"
-        stato_y = f"ΔY={ss.nav_target_y:+d} ✅" if ss.nav_y_selected else "ΔY=—"
-        dest_x  = ss.pos[0] + ss.nav_target_x if ss.nav_x_selected else "?"
-        dest_y  = ss.pos[1] + ss.nav_target_y if ss.nav_y_selected else "?"
-        st.markdown(
-            f"📍 **{stato_x} | {stato_y}** → **({dest_x}, {dest_y})**  \n"
-            f"Pos: **({ss.pos[0]}, {ss.pos[1]})**"
-        )
 
         if (x_pressed or y_pressed) and ss.nav_x_selected and ss.nav_y_selected:
             dx = ss.nav_target_x
