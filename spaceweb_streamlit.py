@@ -674,7 +674,7 @@ def schermata_gioco():
 
     mostra_testata()
 
-    col_mappa, col_status = st.columns([2, 1.2])
+    col_mappa, col_status = st.columns([1.5, 1.2])
 
     with col_mappa:
         st.markdown('<div class="section-title">🌌 GALAXY VIEW</div>', unsafe_allow_html=True)
