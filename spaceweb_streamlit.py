@@ -682,7 +682,7 @@ def schermata_gioco():
         buf = disegna_griglia()
         img_b64 = base64.b64encode(buf.read()).decode("utf-8")
         st.markdown(
-            f'<img src="data:image/png;base64,{img_b64}" style="width:500px;"/>',
+            f'<img src="data:image/png;base64,{img_b64}" style="width:900px;"/>',
             unsafe_allow_html=True
         )
 
