@@ -21,6 +21,11 @@ from supabase import create_client, Client
 # modifica del 16/03
 from portafoglio import Portafoglio
 
+MISSIONE_TESTO = (
+    "Missione: andare da 0,0 a 9,9 affrontando nemico, mine, tempeste e quiz, "
+    "passando per i 3 punti verdi iniziali per ottenere il riconoscimento del premio."
+)
+
 # ============================================================
 # CONFIGURAZIONE PAGINA - 16/03/26
 # ============================================================
@@ -31,12 +36,20 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Caricamento del CSS dal file esterno
-try:
-    with open("assets/css/space_theme.css", "r") as f:
-        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
-except FileNotFoundError:
-    st.error("⚠️ Il sistema non trova il file CSS in assets/css/")    
+# Caricamento del CSS dal file esterno (path robusto per locale/cloud)
+css_candidates = [
+    os.path.join(os.path.dirname(__file__), "assets", "css", "space_theme.css"),
+    os.path.join(os.path.dirname(__file__), "space_theme.css"),
+]
+css_loaded = False
+for css_path in css_candidates:
+    if os.path.exists(css_path):
+        with open(css_path, "r", encoding="utf-8") as f:
+            st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+        css_loaded = True
+        break
+if not css_loaded:
+    st.error("⚠️ CSS non trovato: atteso in assets/css/space_theme.css")
     
 # ============================================================
 # COSTANTI REGOLO
@@ -129,11 +142,25 @@ astronave_nemica_path = Path(t_n.transform(verts_p), codes_p)
 # DOMANDE QUIZ (7 quiz)
 # ============================================================
 try:
-    from corsi import DOMANDE, QUIZ_NOMI
-except ImportError:
+    import corsi
+    DOMANDE = getattr(corsi, "DOMANDE", {})
+    QUIZ_NOMI = getattr(corsi, "QUIZ_NOMI", None)
+    if QUIZ_NOMI is None:
+        quiz_dati = getattr(corsi, "QUIZ_DATI", {})
+        QUIZ_NOMI = {
+            int(k): v.get("nome", f"Quiz {k}")
+            for k, v in quiz_dati.items()
+            if str(k).isdigit()
+        }
+except Exception:
     # Definizione di emergenza se l'import fallisce
-    QUIZ_NOMI = {1: "Sicurezza LLM", 2: "QuantumVerse", 3: "Terre Rare"}
-    DOMANDE = {1: [], 2: [], 3: []}
+    QUIZ_NOMI = {i: f"Quiz {i}" for i in range(1, 8)}
+    DOMANDE = {i: [] for i in range(1, 8)}
+
+# Garanzia di chiavi complete (evita KeyError se mancano quiz 4..7)
+for i in range(1, 8):
+    DOMANDE.setdefault(i, [])
+    QUIZ_NOMI.setdefault(i, f"Quiz {i}")
 
 # ============================================================
 # SESSION STATE — inizializzazione
@@ -256,7 +283,13 @@ def nuova_partita(nome):
     st.session_state.pos_nemica  = [9, 0]
     st.session_state.cnt_mosse   = 0
     st.session_state.cnt_oracolo = 0
-    st.session_state.msg         = f"Benvenuto {nome}! ⚠️ Attenzione alla nave rossa! Scudo al 50%."
+    st.session_state.msg         = (
+        f"Benvenuto {nome}! 🎯 {MISSIONE_TESTO} ⚠️ Attenzione alla nave rossa! Scudo al 50%."
+    )
+    st.session_state.nav_target_x = 0
+    st.session_state.nav_target_y = 0
+    st.session_state.nav_x_selected = False
+    st.session_state.nav_y_selected = False
     st.session_state.starfleet_alert = False  # [STARFLEET: ENERGIA BASSA] reset
     st.session_state.tempesta_pending = None   # [STARFLEET: TEMPESTA] reset
     st.session_state.starfleet_alert  = False  # [STARFLEET: ENERGIA BASSA] reset
@@ -386,7 +419,12 @@ def esegui_mossa(dx, dy):
         ss.w = 0
         msg += "💀 GAME OVER! Energia esaurita."
     elif ss.pos == [9,9]:
-        msg += "🏆 VITTORIA! Destinazione raggiunta!"
+        if len(ss.q) == 0:
+            msg += "🏆 VITTORIA! Destinazione raggiunta e premio riconosciuto!"
+        else:
+            msg += (
+                f"✅ Arrivato a (9,9), ma mancano {len(ss.q)} punto/i verde/i per il premio."
+            )
 
     ss.msg = msg
 
@@ -490,10 +528,14 @@ def disegna_griglia():
 # TESTATA
 # ============================================================
 def mostra_testata():
+    titolo_hover = MISSIONE_TESTO.replace('"', '&quot;')
     if os.path.exists("q_title.png"):
-        st.image("q_title.png", use_container_width=True)
-    else:
-        st.markdown("<h1>🚀 SPACE WEB</h1>", unsafe_allow_html=True)
+        st.image("q_title.png", width="stretch")
+    st.markdown(
+        f'<h1 title="{titolo_hover}" style="margin-top:0.2rem;">🚀 SPACE WEB</h1>',
+        unsafe_allow_html=True
+    )
+    st.caption(f"🎯 {MISSIONE_TESTO}")
 
 # ============================================================
 # SCHERMATA LOGIN
@@ -506,7 +548,7 @@ def schermata_login():
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         st.markdown("---")
-        nome = st.text_input("", placeholder="▸ Inserisci il tuo nome...",
+        nome = st.text_input("Nome utente", placeholder="▸ Inserisci il tuo nome...",
                              label_visibility="collapsed",
                              key="input_nome_login")
         colA, colB = st.columns(2)
@@ -547,7 +589,7 @@ def schermata_admin():
     st.markdown("### 🔐 PANNELLO AMMINISTRATORE")
     
     # 1. Visualizzazione Tabella dati da Supabase
-    st.dataframe(st.session_state.db, use_container_width=True)
+    st.dataframe(st.session_state.db, width="stretch")
     
     st.markdown("---") # Separatore visivo
     
@@ -557,17 +599,17 @@ def schermata_admin():
     with col_admin1:
         # Gestione del ritorno
         if st.session_state.nome:
-            if st.button("← Torna al gioco", use_container_width=True):
+            if st.button("← Torna al gioco", width="stretch"):
                 st.session_state.schermata = "gioco"
                 st.rerun()
         else:
-            if st.button("← Torna al Login", use_container_width=True):
+            if st.button("← Torna al Login", width="stretch"):
                 st.session_state.schermata = "login"
                 st.rerun()
                 
     with col_admin2:
         # 3. IL BOTTONE PORTAFOGLIO
-        if st.button("📂 Visualizza Portafoglio", type="primary", use_container_width=True):
+        if st.button("📂 Visualizza Portafoglio", type="primary", width="stretch"):
             st.session_state.schermata = "portafoglio"
             st.rerun()
             
@@ -658,6 +700,15 @@ def schermata_quiz():
 def schermata_gioco():
     ss = st.session_state
 
+    if "nav_target_x" not in ss:
+        ss.nav_target_x = ss.pos[0]
+    if "nav_target_y" not in ss:
+        ss.nav_target_y = ss.pos[1]
+    if "nav_x_selected" not in ss:
+        ss.nav_x_selected = False
+    if "nav_y_selected" not in ss:
+        ss.nav_y_selected = False
+
     mostra_testata()
 
     # ── RIGA 1: Galaxy View + Ship Status ────────────────────────────────
@@ -666,7 +717,7 @@ def schermata_gioco():
     with col_mappa:
         st.markdown('<div class="section-title">🌌 GALAXY VIEW</div>', unsafe_allow_html=True)
         buf = disegna_griglia()
-        st.image(buf, use_container_width=True)
+        st.image(buf, width="stretch")
 
     with col_status:
         st.markdown('<div class="section-title">🚀 SHIP STATUS</div>', unsafe_allow_html=True)
@@ -737,11 +788,40 @@ def schermata_gioco():
 
     with col_nav:
         st.markdown('<div class="section-title">🕹 NAVIGAZIONE</div>', unsafe_allow_html=True)
-        dx = st.number_input("X (SX/DX)", min_value=-9, max_value=9,
-                             value=0, step=1, key="inp_dx")
-        dy = st.number_input("Y (SU/GIU)", min_value=-9, max_value=9,
-                             value=0, step=1, key="inp_dy")
-        if st.button("🚀 MUOVI", type="primary", key="btn_muovi"):
+        st.caption("Premi un tasto X (0-9) e un tasto Y (0-9): la mossa parte automaticamente.")
+
+        st.markdown("**X target (0-9)**")
+        x_cols = st.columns(10)
+        x_pressed = False
+        for i in range(10):
+            with x_cols[i]:
+                if st.button(str(i), key=f"btn_x_{i}", width="stretch"):
+                    ss.nav_target_x = i
+                    ss.nav_x_selected = True
+                    x_pressed = True
+
+        st.markdown("**Y target (0-9)**")
+        y_cols = st.columns(10)
+        y_pressed = False
+        for i in range(10):
+            with y_cols[i]:
+                if st.button(str(i), key=f"btn_y_{i}", width="stretch"):
+                    ss.nav_target_y = i
+                    ss.nav_y_selected = True
+                    y_pressed = True
+
+        stato_x = f"X={ss.nav_target_x} ✅" if ss.nav_x_selected else "X=—"
+        stato_y = f"Y={ss.nav_target_y} ✅" if ss.nav_y_selected else "Y=—"
+        st.markdown(
+            f"📍 Selezione: **{stato_x} | {stato_y}**  "+
+            f"Posizione attuale: **({ss.pos[0]}, {ss.pos[1]})**"
+        )
+
+        if (x_pressed or y_pressed) and ss.nav_x_selected and ss.nav_y_selected:
+            dx = ss.nav_target_x - ss.pos[0]
+            dy = ss.nav_target_y - ss.pos[1]
+            ss.nav_x_selected = False
+            ss.nav_y_selected = False
             esegui_mossa(dx, dy)
             st.rerun()
         st.markdown('<div class="section-title">▸ SISTEMI</div>', unsafe_allow_html=True)
