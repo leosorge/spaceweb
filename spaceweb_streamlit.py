@@ -1,5 +1,5 @@
 # ============================================================
-#  🚀 SPACE WEB — Streamlit version - 16/03/26 20:04
+#  🚀 SPACE WEB — Streamlit version
 #  Avvio: streamlit run spaceweb_streamlit.py
 # ============================================================
 
@@ -674,7 +674,8 @@ def schermata_gioco():
 
     mostra_testata()
 
-    col_mappa, col_status = st.columns([1.2, 1.2])
+    # ── UNICA RIGA: Mappa | Ship Status+EventLog+Nav+Sistemi | Legenda ──
+    col_mappa, col_status, col_legenda = st.columns([3, 2, 1])
 
     with col_mappa:
         st.markdown('<div class="section-title">🌌 GALAXY VIEW</div>', unsafe_allow_html=True)
@@ -726,48 +727,48 @@ def schermata_gioco():
             <div class="metric-value good">{ww}</div>
         </div>""", unsafe_allow_html=True)
 
-        nome_display = ss.nome or "Tu"
-        st.markdown(f"""
-        <div style="margin-top:10px; font-size:0.78rem; font-family:'Share Tech Mono',monospace; color:#8899bb; line-height:1.9;">
-            <div class="section-title" style="margin-bottom:6px;">▸ LEGENDA</div>
-            <span style="color:#ff3311;">●</span> Ostacolo (-20) &nbsp;
-            <span style="color:#00dd66;">●</span> Bonus (+20⚡+10 scudo)<br>
-            <span style="color:#8899aa; border:1px solid #8899aa; border-radius:50%; padding:0 2px;">○</span> Stealth (-15) &nbsp;
-            <span style="color:#4488ff;">●</span> Arrivo<br>
-            <span style="color:#ff2200;">●</span> Nemico &nbsp;
-            <span style="color:#FFD700;">●</span> {nome_display}<br>
-            <span style="color:#88ccff;">●</span> Scudo ({ss.scudo}%) &nbsp;
-            <span style="color:hotpink;">●</span> Tempesta (-w/2)
-        </div>""", unsafe_allow_html=True)
+        # ── EVENT LOG (dentro col_status, sotto ship status) ─────────────
+        st.markdown('<div class="section-title" style="margin-top:1rem; font-size:1rem;">📡 EVENT LOG</div>',
+                    unsafe_allow_html=True)
+        msg_class = ""
+        if ss.msg:
+            msg_class = ("danger"  if any(x in ss.msg for x in ["💀","❌","💥","⚠️"])
+                    else "success" if any(x in ss.msg for x in ["🏆","🟢","✅"])
+                    else "")
+        st.markdown(f'<div class="msg-box {msg_class}" style="font-size:1rem;">{ss.msg}</div>',
+                    unsafe_allow_html=True)
+        st.markdown('<div class="oracolo-title" style="font-size:1rem;">🌌 COMUNICAZIONI DA STARFLEET</div>',
+                    unsafe_allow_html=True)
+        alert_class = "alert" if ss.get("starfleet_alert", False) else ""
+        st.markdown(f'<div class="oracolo-box {alert_class}" style="font-size:1rem;">{ss.oracolo_txt}</div>',
+                    unsafe_allow_html=True)
 
-    col_nav, col_log = st.columns([1, 2])
+        # ── NAVIGAZIONE ──────────────────────────────────────────────────
+        st.markdown('<div class="section-title" style="margin-top:1rem; font-size:1rem;">🕹 NAVIGAZIONE</div>',
+                    unsafe_allow_html=True)
+        st.caption("Scegli ΔX poi ΔY. La mossa parte automaticamente.")
 
-    with col_nav:
-        st.markdown('<div class="section-title">🕹 NAVIGAZIONE</div>', unsafe_allow_html=True)
-        st.caption("Spostamento relativo: scegli ΔX poi ΔY. La mossa parte automaticamente.")
-
-        # Valori relativi -5…+5 (saltiamo lo 0 — non ha senso spostarsi di 0)
         STEPS = [-5, -4, -3, -2, -1, +1, +2, +3, +4, +5]
 
-        st.markdown("**ΔX (spostamento orizzontale)**")
+        st.markdown("**ΔX**")
         x_cols = st.columns(len(STEPS))
         x_pressed = False
         for col, val in zip(x_cols, STEPS):
             with col:
                 label = f"+{val}" if val > 0 else str(val)
                 if st.button(label, key=f"btn_x_{val}", width="stretch"):
-                    ss.nav_target_x = val   # ora è già un delta
+                    ss.nav_target_x = val
                     ss.nav_x_selected = True
                     x_pressed = True
 
-        st.markdown("**ΔY (spostamento verticale)**")
+        st.markdown("**ΔY**")
         y_cols = st.columns(len(STEPS))
         y_pressed = False
         for col, val in zip(y_cols, STEPS):
             with col:
                 label = f"+{val}" if val > 0 else str(val)
                 if st.button(label, key=f"btn_y_{val}", width="stretch"):
-                    ss.nav_target_y = val   # ora è già un delta
+                    ss.nav_target_y = val
                     ss.nav_y_selected = True
                     y_pressed = True
 
@@ -776,49 +777,54 @@ def schermata_gioco():
         dest_x  = ss.pos[0] + ss.nav_target_x if ss.nav_x_selected else "?"
         dest_y  = ss.pos[1] + ss.nav_target_y if ss.nav_y_selected else "?"
         st.markdown(
-            f"📍 **{stato_x} | {stato_y}** → destinazione: **({dest_x}, {dest_y})**  \n"
-            f"Posizione attuale: **({ss.pos[0]}, {ss.pos[1]})**"
+            f"📍 **{stato_x} | {stato_y}** → **({dest_x}, {dest_y})**  \n"
+            f"Pos: **({ss.pos[0]}, {ss.pos[1]})**"
         )
 
         if (x_pressed or y_pressed) and ss.nav_x_selected and ss.nav_y_selected:
-            dx = ss.nav_target_x   # già relativo
+            dx = ss.nav_target_x
             dy = ss.nav_target_y
             ss.nav_x_selected = False
             ss.nav_y_selected = False
             esegui_mossa(dx, dy)
             st.rerun()
 
-        st.markdown('<div class="section-title">▸ SISTEMI</div>', unsafe_allow_html=True)
-        if st.button("📊 Database",      key="btn_db"):    ss.schermata = "admin"; st.rerun()
-        if st.button("🎓 Quiz",          key="btn_quiz"):  ss.quiz_tipo = None; ss.schermata = "quiz"; st.rerun()
-        if st.button("🔄 Nuova partita", key="btn_nuova"): nuova_partita(ss.nome); st.rerun()
-        if st.button("← Logout",         key="btn_logout"):
-            db   = ss.db
-            mask = db["nome"].str.lower() == ss.nome.lower()
-            if mask.any():
-                idx = db.index[mask][0]
-                db.at[idx, "energia"] = int(ss.w)
-                ss.db = db
-                db_salva_utente(db.loc[idx].to_dict())
-            ss.schermata = "login"
-            st.rerun()
-
-    with col_log:
-        st.markdown('<div class="section-title">📡 EVENT LOG</div>', unsafe_allow_html=True)
-
-        msg_class = ""
-        if ss.msg:
-            msg_class = ("danger"  if any(x in ss.msg for x in ["💀","❌","💥","⚠️"])
-                    else "success" if any(x in ss.msg for x in ["🏆","🟢","✅"])
-                    else "")
-        st.markdown(f'<div class="msg-box {msg_class}">{ss.msg}</div>',
+        # ── SISTEMI in orizzontale ────────────────────────────────────────
+        st.markdown('<div class="section-title" style="margin-top:1rem;">▸ SISTEMI</div>',
                     unsafe_allow_html=True)
+        s1, s2, s3, s4 = st.columns(4)
+        with s1:
+            if st.button("📊 DB",    key="btn_db",     width="stretch"): ss.schermata = "admin"; st.rerun()
+        with s2:
+            if st.button("🎓 Quiz",  key="btn_quiz",   width="stretch"): ss.quiz_tipo = None; ss.schermata = "quiz"; st.rerun()
+        with s3:
+            if st.button("🔄 Nuova", key="btn_nuova",  width="stretch"): nuova_partita(ss.nome); st.rerun()
+        with s4:
+            if st.button("← Logout", key="btn_logout", width="stretch"):
+                db   = ss.db
+                mask = db["nome"].str.lower() == ss.nome.lower()
+                if mask.any():
+                    idx = db.index[mask][0]
+                    db.at[idx, "energia"] = int(ss.w)
+                    ss.db = db
+                    db_salva_utente(db.loc[idx].to_dict())
+                ss.schermata = "login"
+                st.rerun()
 
-        st.markdown('<div class="oracolo-title">🌌 COMUNICAZIONI DA STARFLEET</div>',
-                    unsafe_allow_html=True)
-        alert_class = "alert" if ss.get("starfleet_alert", False) else ""
-        st.markdown(f'<div class="oracolo-box {alert_class}">{ss.oracolo_txt}</div>',
-                    unsafe_allow_html=True)
+    with col_legenda:
+        nome_display = ss.nome or "Tu"
+        st.markdown(f'''
+        <div style="margin-top:2.2rem; font-size:0.85rem; font-family:monospace; color:#8899bb; line-height:2.2;">
+            <div class="section-title" style="margin-bottom:8px;">▸ LEGENDA</div>
+            <span style="color:#ff3311;">●</span> Ostacolo (-20)<br>
+            <span style="color:#00dd66;">●</span> Bonus (+20⚡+10 scudo)<br>
+            <span style="color:#8899aa; border:1px solid #8899aa; border-radius:50%; padding:0 2px;">○</span> Stealth (-15)<br>
+            <span style="color:#4488ff;">●</span> Arrivo (9,9)<br>
+            <span style="color:#ff2200;">●</span> Nave nemica<br>
+            <span style="color:#FFD700;">●</span> {nome_display}<br>
+            <span style="color:#88ccff;">●</span> Scudo ({ss.scudo}%)<br>
+            <span style="color:hotpink;">●</span> Tempesta (-w/2)
+        </div>''', unsafe_allow_html=True)
 
 # ============================================================
 # ROUTER
