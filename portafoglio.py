@@ -13,12 +13,12 @@ def Portafoglio():
         "La spinta a partecipare al quiz viene dai premi messi in palio dal cliente per chi raggiungerà l'obiettivo nella missione di un gioco spaziale."
     )
 
-    # --- CSS: TOOLTIP VERSO IL BASSO E LAYOUT ---
-    # Nota: Usiamo le doppie parentesi {{ }} per il CSS dentro le f-string di Python
+    # --- CSS: TOOLTIP, LAYOUT E CARD (PULITO E ROBUSTO) ---
     st.markdown(f"""
         <style>
         .white-text {{ color: white !important; font-family: sans-serif; }}
         
+        /* Tooltip posizionato in basso */
         .tooltip {{
             position: relative;
             display: inline-block;
@@ -65,6 +65,7 @@ def Portafoglio():
             border-color: transparent transparent #4da6ff transparent;
         }}
 
+        /* Rimuove i bordi bianchi di default di Streamlit */
         [data-testid="stVerticalBlock"] > div:has(div.card-anchor) {{
             background-color: transparent !important;
             border: none !important;
@@ -90,7 +91,7 @@ def Portafoglio():
         .card-coming {{ background-color: #eeeeee; border: 1px solid #bdbdbd; }}
 
         .card-title {{
-            font-size: 2rem; 
+            font-size: 1.5rem; 
             font-weight: 900;
             text-transform: uppercase;
             margin-bottom: 8px;
@@ -140,32 +141,38 @@ def Portafoglio():
     
     st.markdown("---")
 
-    # --- DATI E GRIGLIA ---
+    # --- RECUPERO DATI ---
     quiz_info = getattr(corsi, 'QUIZ_DATI', {})
     df_utenti = ss.get('db', pd.DataFrame())
+
+    # --- GENERAZIONE GRIGLIA ---
     cols = st.columns(3)
     logo_default = "https://vincos.it/wp-content/uploads/2026/02/vincos-logo.png"
     
     for i, (q_id, info) in enumerate(quiz_info.items()):
         with cols[i % 3]:
             st.markdown('<div class="card-anchor"></div>', unsafe_allow_html=True)
+            
             logo_corso = info.get('logo', logo_default)
             unita = "Qwat" if q_id == 2 else "Punti"
 
             if q_id > 5:
+                # BOX COMING SOON
                 html_card = f"""
                 <div class="card-container card-coming">
                     <div class="card-title" style="color: #666;">🕒 COMING SOON</div>
-                    <div class="card-body-text">Modulo in fase di sviluppo.</div>
+                    <div class="card-body-text">
+                        Modulo in fase di sviluppo.<br>Specifiche tecniche in arrivo.
+                    </div>
                     <img src="{logo_corso}" class="card-img-dinamica">
                     <div class="punti-badge" style="color: #777;">+0 {unita}</div>
                 </div>
                 """
             else:
+                # BOX ATTIVO
                 col_p = f"punteggio{q_id}"
                 n_utenti = 0
                 if not df_utenti.empty and col_p in df_utenti.columns:
-                    # Protezione contro errori di tipo nel DB
                     n_utenti = len(df_utenti[df_utenti[col_p].fillna(0) > 0])
                 
                 html_card = f"""
@@ -182,9 +189,11 @@ def Portafoglio():
                     <img src="{logo_corso}" class="card-img-dinamica">
                 </div>
                 """
+            
             st.markdown(html_card, unsafe_allow_html=True)
 
     st.markdown("---")
-    if st.button("« TORNA AL PANNELLO AMMINISTRATORE", use_container_width=True):
+    # Aggiornato per API 2026
+    if st.button("« TORNA AL PANNELLO AMMINISTRATORE", width='stretch'):
         ss.schermata = "admin"
         st.rerun()
