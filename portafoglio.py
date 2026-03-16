@@ -90,7 +90,7 @@ def Portafoglio():
         .card-coming {{ background-color: #eeeeee; border: 1px solid #bdbdbd; }}
 
         .card-title {{
-            font-size: 1.5rem; 
+            font-size: 2rem; 
             font-weight: 900;
             text-transform: uppercase;
             margin-bottom: 8px;
