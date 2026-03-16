@@ -780,12 +780,17 @@ def schermata_gioco():
                     unsafe_allow_html=True)
 
 # ============================================================
-# ROUTER 16/03/26
+# ROUTER DEFINITIVO
 # ============================================================
 schermata = st.session_state.schermata
 
-if     schermata == "login":       schermata_login()
-elif   schermata == "admin":       schermata_admin()
-elif   schermata == "quiz":        schermata_quiz()
-elif   schermata == "gioco":       schermata_gioco()
-elif   schermata == "portafoglio": Portafoglio() # <--- SOSTITUISCE IL TUO IF SEPARATO
+if schermata == "login":
+    schermata_login()
+elif schermata == "admin":
+    schermata_admin()
+elif schermata == "quiz":
+    schermata_quiz()
+elif schermata == "gioco":
+    schermata_gioco()
+elif schermata == "portafoglio":
+    Portafoglio()
