@@ -1,6 +1,5 @@
 # ============================================================
-#  🚀 SPACE WEB — Streamlit version (aggiornato)
-#  Avvio: streamlit run spaceweb_streamlit.py
+# 🚀 SPACE WEB CORE — RECOVERY COMPLETA (16/03/2026)
 # ============================================================
 
 import streamlit as st
@@ -8,11 +7,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from matplotlib.path import Path
 import matplotlib.transforms as transforms
-from matplotlib.lines import Line2D
-import matplotlib.patches as patches
-import random
-import pandas as pd
-import requests
+import random, pandas as pd, io, os
 from datetime import datetime
 import io
 import os
@@ -66,82 +61,21 @@ REGOLO_MODEL    = "qwen3-8b"
 # [SUPABASE] URL del progetto: si trova in Supabase → Settings → API → Project URL
 # In produzione (Koyeb) viene letto dalla variabile d'ambiente SUPABASE_URL
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://ammjetjchtzhlugpbcuy.supabase.co")
+from supabase import create_client
 
-# [SUPABASE] Chiave pubblica "anon/public": si trova in Supabase → Settings → API → anon key
-# NON è la service_role key — quella va tenuta segreta e usata solo server-side
-# In produzione (Koyeb) viene letta dalla variabile d'ambiente SUPABASE_KEY
-SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "sb_publishable_5zEqZVBXKoW3hmFogr7SWg_Y2pUUP-r")
+# --- 1. CONFIGURAZIONE E STILI ---
+st.set_page_config(page_title="SPACE WEB 2026", layout="wide", initial_sidebar_state="collapsed")
 
-# [SUPABASE] Crea il client singleton e lo mette in cache per evitare
-# di aprire una nuova connessione a ogni rerun di Streamlit
-@st.cache_resource
-def get_supabase():
-    # [SUPABASE] Re-import locale necessario perché @cache_resource serializza
-    # il risultato: l'oggetto Client non è pickle-able, ma il factory funziona
-    from supabase import create_client
-    return create_client(SUPABASE_URL, SUPABASE_KEY)
+st.markdown("""
+<style>
+    .stApp { background-color: #02040f; color: #e0e0e0; font-family: 'Courier New', monospace; }
+    .metric-box { background: #162447; border: 1px solid #1f4068; padding: 15px; border-radius: 10px; text-align: center; }
+    .stButton>button { width: 100%; border-radius: 5px; background: #1b1b2f; color: #4ecca3; border: 1px solid #4ecca3; font-weight: bold; }
+    .stButton>button:hover { background: #4ecca3; color: #1b1b2f; }
+</style>
+""", unsafe_allow_html=True)
 
-def db_carica() -> pd.DataFrame:
-    """Legge tutti i record dalla tabella 'utenti' su Supabase.
-    Restituisce un DataFrame di fallback (con un utente placeholder)
-    se Supabase non è raggiungibile, così l'app funziona anche offline.
-    """
-    try:
-        # [SUPABASE] Recupera il client dalla cache
-        sb   = get_supabase()
-        # [SUPABASE] SELECT * FROM utenti — .execute() invia la richiesta HTTP,
-        # .data contiene la lista di dict con le righe restituite
-        rows = sb.table("utenti").select("*").execute().data
-        if rows:
-            return pd.DataFrame(rows)
-    except Exception as e:
-        # [SUPABASE] Se la connessione fallisce (es. URL/KEY errati, rete assente)
-        # mostra un avviso non bloccante e usa il DataFrame locale di riserva
-        st.warning(f"⚠️ Supabase non raggiungibile: {e}")
-    # Fallback locale — struttura speculare alla tabella 'utenti' su Supabase
-    # [SUPABASE] Attenzione: le colonne qui devono corrispondere esattamente
-    # a quelle della tabella su Supabase (punteggio1…7, data1…7, ww)
-    return pd.DataFrame({
-        "nome": ["xyx"], "data1": ["00/00/00"], "punteggio1": [0],
-        "data2": ["00/00/00"], "punteggio2": [0],
-        "data3": ["00/00/00"], "punteggio3": [0],
-        "data4": ["00/00/00"], "punteggio4": [0],
-        "data5": ["00/00/00"], "punteggio5": [0],
-        "data6": ["00/00/00"], "punteggio6": [0],
-        "data7": ["00/00/00"], "punteggio7": [0],
-        "ww": [0], "energia": [100]
-    })
-
-def db_salva_utente(row: dict):
-    """Inserisce o aggiorna un utente su Supabase tramite UPSERT.
-    Se il nome esiste già lo aggiorna, altrimenti crea un nuovo record.
-    """
-    try:
-        # [SUPABASE] Recupera il client dalla cache
-        sb = get_supabase()
-        # [SUPABASE] UPSERT: INSERT ... ON CONFLICT (nome) DO UPDATE
-        # on_conflict="nome" indica che 'nome' è la colonna con vincolo UNIQUE
-        # nella tabella — va impostato in Supabase: Table Editor → nome → Unique
-        sb.table("utenti").upsert(row, on_conflict="nome").execute()
-    except Exception as e:
-        # [SUPABASE] Errore non bloccante: il gioco continua con dati solo in memoria
-        st.warning(f"⚠️ Errore salvataggio Supabase: {e}")
-
-# ============================================================
-# SAGOME ASTRONAVI
-# ============================================================
-verts_p = [(0.,1.),(0.5,-0.5),(0.2,-0.2),(0.,-0.8),(-0.2,-0.2),(-0.5,-0.5),(0.,1.)]
-codes_p  = [Path.MOVETO,Path.LINETO,Path.LINETO,Path.LINETO,
-            Path.LINETO,Path.LINETO,Path.CLOSEPOLY]
-t_p = transforms.Affine2D().rotate_deg(-45)
-astronave_path = Path(t_p.transform(verts_p), codes_p)
-
-t_n = transforms.Affine2D().rotate_deg(180-45)
-astronave_nemica_path = Path(t_n.transform(verts_p), codes_p)
-
-# ============================================================
-# DOMANDE QUIZ (7 quiz)
-# ============================================================
+# --- 2. DATI ESTERNI & DATABASE ---
 try:
     import corsi
     DOMANDE = getattr(corsi, "DOMANDE", {})
@@ -194,28 +128,14 @@ def init_state():
         st.session_state.quiz_idx     = 0
         st.session_state.quiz_score   = 0
         st.session_state.quiz_msg     = ""
+    DOMANDE = corsi.DOMANDE
+    QUIZ_NOMI = corsi.QUIZ_NOMI
+except:
+    DOMANDE = {1: [{"t": "File corsi.py non trovato", "o": ["A", "B"], "c": "A", "s": ""}]}
+    QUIZ_NOMI = {1: "Modulo Emergenza"}
 
-init_state()
-
-# ============================================================
-# FUNZIONI LOGICHE
-# ============================================================
-def aggiorna_punteggio(nome_utente, quale, valore):
-    db = st.session_state.db
-    col_p = f"punteggio{quale}"
-    col_d = f"data{quale}"
-    mask = db["nome"].str.lower() == nome_utente.lower()
-    if not mask.any():
-        oggi = datetime.today().strftime("%d/%m/%y")
-        nuova = pd.DataFrame({
-            "nome": [nome_utente],
-            **{f"data{i}": [oggi] for i in range(1, 8)},
-            **{f"punteggio{i}": [0] for i in range(1, 8)},
-            "ww": [0], "energia": [100]
-        })
-        st.session_state.db = pd.concat([db, nuova], ignore_index=True)
-        db   = st.session_state.db
-        mask = db["nome"].str.lower() == nome_utente.lower()
+URL = "https://ammjetjchtzhlugpbcuy.supabase.co"
+KEY = os.environ.get("SUPABASE_KEY", "sb_publishable_5zEqZVBXKoW3hmFogr7SWg_Y2pUUP-r")
 
     # Aggiungi colonne mancanti se necessario
     for i in range(1, 8):
@@ -424,18 +344,22 @@ def esegui_mossa(dx, dy):
             msg += (
                 f"✅ Arrivato a (9,9), ma mancano {len(ss.q)} punto/i verde/i per il premio."
             )
+@st.cache_resource
+def get_db(): return create_client(URL, KEY)
 
-    ss.msg = msg
+def db_sync(data):
+    try: get_db().table("utenti").upsert(data, on_conflict="nome").execute()
+    except: pass
 
-# ============================================================
-# DISEGNA GRIGLIA
-# ============================================================
-def disegna_griglia():
-    ss  = st.session_state
-    fig = plt.figure(figsize=(7, 7))
-    fig.patch.set_facecolor('#02040f')
-    # add_axes([left, bottom, width, height]) — occupa tutta la figura senza spazio per legenda
-    ax  = fig.add_axes([0.06, 0.04, 0.91, 0.93])
+# --- 3. MOTORE GRAFICO ---
+def ship_path(rot):
+    v = [(0,1),(0.5,-0.5),(0.2,-0.2),(0,-0.8),(-0.2,-0.2),(-0.5,-0.5),(0,1)]
+    c = [Path.MOVETO,Path.LINETO,Path.LINETO,Path.LINETO,Path.LINETO,Path.LINETO,Path.CLOSEPOLY]
+    return Path(transforms.Affine2D().rotate_deg(rot).transform(v), c)
+
+def render_map():
+    ss = st.session_state
+    fig, ax = plt.subplots(figsize=(8,8), facecolor='#02040f')
     ax.set_facecolor('#030612')
     ax.set_xlim(-0.5, 9.5)
     ax.set_ylim(-0.5, 9.5)
@@ -599,8 +523,14 @@ def schermata_admin():
     
     # 1. Visualizzazione Tabella dati da Supabase
     st.dataframe(st.session_state.db, width="stretch")
+    ax.set_xlim(-0.5, 9.5); ax.set_ylim(-0.5, 9.5)
+    ax.grid(True, color='#1f4068', alpha=0.1)
     
-    st.markdown("---") # Separatore visivo
+    for x,y in ss.l: ax.scatter(x,y,marker='x',color='red',s=100)
+    for x,y in ss.q: ax.scatter(x,y,marker='H',color='#00ff88',s=150)
+    ax.add_patch(mpatches.RegularPolygon((9,9),6,0.4,color='#00b8ff',alpha=0.3))
+    ax.scatter(ss.pn[0], ss.pn[1], marker=ship_path(135), s=400, color='red')
+    ax.scatter(ss.pos[0], ss.pos[1], marker=ship_path(-45), s=600, color='white')
     
     # 2. Creazione delle due colonne pulite
     col_admin1, col_admin2 = st.columns(2)
@@ -702,11 +632,12 @@ def schermata_quiz():
                 st.rerun()
 
     st.markdown('</div>', unsafe_allow_html=True)
+    ax.invert_yaxis(); plt.axis('off')
+    buf = io.BytesIO(); plt.savefig(buf, format='png', bbox_inches='tight', pad_inches=0); plt.close(fig)
+    return buf
 
-# ============================================================
-# SCHERMATA GIOCO
-# ============================================================
-def schermata_gioco():
+# --- 4. LOGICA DI MOVIMENTO ---
+def move(dx, dy):
     ss = st.session_state
 
     if "nav_target_x" not in ss:
@@ -884,3 +815,69 @@ elif schermata_attuale == "gioco":
 elif schermata_attuale == "portafoglio":
     # Esegue solo il portafoglio
     Portafoglio()
+    nx, ny = ss.pos[0]+dx, ss.pos[1]+dy
+    if 0<=nx<=9 and 0<=ny<=9:
+        costo = 1 if dx==0 or dy==0 else 2
+        if ss.w >= costo:
+            ss.pos = [nx,ny]; ss.w -= costo; ss.m += 1
+            if (nx,ny) in ss.l: ss.w-=20; ss.s-=25; ss.log="💥 MINA!"
+            if (nx,ny) in ss.q: ss.w+=40; ss.q.remove((nx,ny)); ss.log="🔋 QWAT+"
+            if ss.m%3==0: ss.pn = [random.randint(0,9), random.randint(0,9)]
+
+# --- 5. SCHERMATE ---
+def play():
+    ss = st.session_state
+    st.title("🚀 SPACE WEB CORE")
+    c1, c2 = st.columns([3,1.2])
+    with c1: st.image(render_map(), use_container_width=True)
+    with c2:
+        st.markdown(f"<div class='metric-box'>⚡ QWAT: {ss.w}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='metric-box' style='margin-top:10px'>🛡️ SCUDO: {max(0,ss.s)}%</div>", unsafe_allow_html=True)
+        st.write("### 🎮 COMANDI")
+        _, u, _ = st.columns(3)
+        with u: st.button("▲", on_click=move, args=(0,-1))
+        l, _, r = st.columns(3)
+        with l: st.button("◄", on_click=move, args=(-1,0))
+        with r: st.button("►", on_click=move, args=(1,0))
+        _, d, _ = st.columns(3)
+        with d: st.button("▼", on_click=move, args=(0,1))
+        st.divider()
+        if st.button("🔬 QUIZ"): ss.p="quiz"; st.rerun()
+    st.info(f"Log: {ss.log}")
+    if ss.pos == [9,9]: st.balloons(); st.success("VITTORIA!"); db_sync({"nome":ss.nome,"w":ss.w,"win":True})
+
+def quiz():
+    ss = st.session_state
+    if "qa" not in ss:
+        for k,v in QUIZ_NOMI.items():
+            if st.button(f"🚀 {v}"): ss.qa=k; ss.iq=0; ss.pq=0; st.rerun()
+        if st.button("Indietro"): ss.p="play"; st.rerun()
+    else:
+        ds = DOMANDE[ss.qa]
+        if ss.iq < len(ds):
+            st.subheader(f"Quesito {ss.iq+1}")
+            r = st.radio(ds[ss.iq]['t'], ds[ss.iq]['o'], index=None)
+            if st.button("Invia"):
+                if r and r.startswith(ds[ss.iq]['c']): ss.pq+=1; ss.w+=15
+                ss.iq+=1; st.rerun()
+        else:
+            db_sync({"nome":ss.nome, f"punteggio{ss.qa}":ss.pq, "w":ss.w})
+            del ss.qa; st.rerun()
+
+# --- 6. INITIALIZATION & MAIN ---
+if "p" not in st.session_state:
+    st.session_state.update({"p":"login","pos":[0,0],"pn":[9,1],"w":100,"s":100,"m":0,"log":"Pronto","l":[(random.randint(1,8),random.randint(1,8)) for _ in range(12)],"q":[(random.randint(1,8),random.randint(1,8)) for _ in range(3)]})
+
+ss = st.session_state
+if ss.p == "login":
+    ss.nome = st.text_input("ID PILOTA:")
+    if st.button("DECOLLO") and ss.nome: ss.p="play"; st.rerun()
+elif ss.p == "play": play()
+elif ss.p == "quiz": quiz()
+elif ss.p == "admin":
+    if st.text_input("Psw", type="password") == "adams42":
+        st.dataframe(pd.DataFrame(get_db().table("utenti").select("*").execute().data))
+    if st.button("Esci"): ss.p="play"; st.rerun()
+
+with st.sidebar:
+    if st.button("⚙️"): ss.p="admin"; st.rerun()
