@@ -675,14 +675,15 @@ def schermata_gioco():
 
     mostra_testata()
 
-    col_mappa, col_status = st.columns([3, 1.2])
+    col_mappa, col_status = st.columns([4, 1.2])
 
     with col_mappa:
         st.markdown('<div class="section-title">🌌 GALAXY VIEW</div>', unsafe_allow_html=True)
         buf = disegna_griglia()
         img_b64 = base64.b64encode(buf.read()).decode("utf-8")
         st.markdown(
-            f'<img src="data:image/png;base64,{img_b64}" style="width:900px;"/>',
+            f'<img src="data:image/png;base64,{img_b64}" '
+            f'style="width:100%; display:block; margin-left:0;"/>',
             unsafe_allow_html=True
         )
 
