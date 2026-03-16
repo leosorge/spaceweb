@@ -5,42 +5,43 @@ import pandas as pd
 def Portafoglio():
     ss = st.session_state
     
-    # --- INTESTAZIONE ---
+    # 1. Pulizia Intestazione
     st.markdown("## 📂 PORTAFOGLIO COMPETENZE ASTRO-NAVALI")
     
-    # Controllo nome utente per evitare "Vincos" in sessione admin
-    nome_attuale = ss.get('nome', '')
-    if nome_attuale and nome_attuale.lower() != "vincos":
-        st.markdown(f"**Cadetto:** {nome_attuale}")
+    # Rimuove il nome "Vincos" se presente per errore nel database o sessione
+    nome_per_display = ss.get('nome', '')
+    if nome_per_display and nome_per_display.lower() != "vincos":
+        st.write(f"**Cadetto:** {nome_per_display}")
     else:
-        st.markdown("**Status:** Sessione Amministratore")
+        st.write("**Status:** Sessione Amministratore")
+    
     st.markdown("---")
 
-    # Recupero dati
+    # 2. Recupero Dati
     quiz_info = getattr(corsi, 'QUIZ_DATI', {})
     df_utenti = ss.get('db', pd.DataFrame())
 
-    # --- CSS: GRIGLIA E BADGE STONDATI ---
-    # Definiamo lo stile una sola volta
-    st.markdown("""
-        <style>
+    # 3. COSTRUZIONE UNICA STRINGA (CSS + HTML)
+    # Mettere tutto insieme evita che Streamlit separi i blocchi visivamente
+    html_finale = """
+    <style>
         .portfolio-grid {
             display: flex;
             flex-wrap: wrap;
             gap: 20px;
             justify-content: flex-start;
-            padding: 10px 0;
         }
         .portfolio-card {
             background-color: #fdf5f5; 
             border: 1px solid #e0d0d0;
-            border-radius: 25px; /* Angoli stondati richiesti */
+            border-radius: 25px; /* Angoli stondati */
             padding: 25px;
             width: 300px;
             min-height: 400px;
             display: flex;
             flex-direction: column;
-            box-shadow: 4px 4px 12px rgba(0,0,0,0.06);
+            box-shadow: 4px 4px 10px rgba(0,0,0,0.05);
+            font-family: sans-serif;
         }
         .card-icon { color: #a33; font-size: 3rem; text-align: center; margin-bottom: 10px; }
         .card-title { 
@@ -51,9 +52,9 @@ def Portafoglio():
             margin-bottom: 15px;
             text-transform: uppercase;
         }
-        .card-info { font-size: 0.95rem; margin-bottom: 6px; color: #333; }
+        .card-info { font-size: 0.95rem; margin-bottom: 5px; color: #444; }
         .card-stats { 
-            background: rgba(255,255,255,0.8); 
+            background: rgba(255,255,255,0.7); 
             padding: 12px; 
             border-radius: 15px; 
             margin-top: 15px;
@@ -67,18 +68,14 @@ def Portafoglio():
             font-size: 1.2rem; 
             color: #a33;
         }
-        </style>
-    """, unsafe_allow_html=True)
+    </style>
+    <div class="portfolio-grid">
+    """
 
-    # --- COSTRUZIONE HTML ---
-    # Creiamo un'unica stringa contenente tutti i badge
-    html_totale = '<div class="portfolio-grid">'
-    
     for q_id, info in quiz_info.items():
         col_p = f"punteggio{q_id}"
         col_d = f"data{q_id}"
         
-        # Statistiche dal DB locale/Supabase
         n_utenti = 0
         ultima_data = "N/D"
         if not df_utenti.empty and col_p in df_utenti.columns:
@@ -86,11 +83,10 @@ def Portafoglio():
             if n_utenti > 0 and col_d in df_utenti.columns:
                 ultima_data = df_utenti[col_d].max()
 
-        # Unità di misura: Qwat per Modulo 2, Punti per gli altri
+        # Unità di misura: Qwat per QuantumVerse (ID 2)
         unita = "Qwat" if q_id == 2 else "Punti"
 
-        # Aggiungiamo la card alla stringa
-        html_totale += f"""
+        html_finale += f"""
         <div class="portfolio-card">
             <div class="card-icon">★</div>
             <div class="card-title">{info.get('nome', '').upper()}</div>
@@ -107,10 +103,10 @@ def Portafoglio():
         </div>
         """
     
-    html_totale += '</div>' # Chiude la griglia
-    
-    # VISUALIZZAZIONE FINALE: un solo markdown per tutto l'HTML
-    st.markdown(html_totale, unsafe_allow_html=True)
+    html_finale += "</div>"
+
+    # 4. RENDERING FINALE (UNICO COMANDO)
+    st.markdown(html_finale, unsafe_allow_html=True)
 
     st.markdown("---")
     if st.button("« TORNA AL PANNELLO AMMINISTRATORE", use_container_width=True):
