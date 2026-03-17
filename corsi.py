@@ -92,11 +92,11 @@ DOMANDE = {
         {"t": "Focus di Midjourney vs concorrenti?",    "o": ["A) Strumenti marketing", "B) Strada artistica e originalità", "C) Solo testi"], "c": "B", "s": "Privilegia la capacità espressiva unica rispetto all'editing commerciale."},
     ],
     6: [
-        {"t": "Quale standard infrastruttura?",   "o": ["A) ISO 9001", "B) Amazon DSP2", "C) Autostrade europee"],           "c": "C", "s": "Amazon DSP2 è il più stringente degli standard per recinzioni e sorveglianza."},
-        {"t": "Come stabilizza il prezzo?",  "o": ["A) Sussidi statali/regionali", "B) Energy Storage", "C) Acquisti spot"], "c": "C", "s": "Grandi batterie (fino a 18 MWh) massimizzano il successo di contratti PPA a lungo termine."},
-        {"t": "Occupancy target?",   "o": ["A) 50% degli stalli", "B) 75% degli stalli", "C) >97% degli stalli"],            "c": "C", "s": "Un margine del 25% di stalli non occupati è un ottimo risultato.."},
-        {"t": "Provincia o città?",   "o": ["A) Permessi in città", "B) Costo dei terreni", "C) Potenza della rete"],        "c": "C", "s": "Grazie a costi del terreno inferiori a fronte di chilometraggi elevati e costi identici per gasolio/benzina e manutenzione."},
-        {"t": "Perché standard industriali?",  "o": ["A) Estetica e brand", "B) Uptime", "C) Controllo dei costi"],          "c": "C", "s": "Sono necessari componenti progettati su misura, ridondati, con magazzino ricambi locale e manutenzione statistica o predittiva."},
+        {"t": "Quale standard infrastruttura?",   "o": ["A) ISO 9001", "B) Amazon DSP2", "C) Autostrade europee"],           "c": "B", "s": "Amazon DSP2 è il più stringente degli standard per recinzioni e sorveglianza."},
+        {"t": "Come stabilizza il prezzo?",  "o": ["A) Sussidi statali/regionali", "B) Acquisti spot", "C) Energy Storage"], "c": "C", "s": "Grandi batterie (fino a 18 MWh) massimizzano il successo di contratti PPA a lungo termine."},
+        {"t": "Occupancy target?",   "o": ["A) 50% degli stalli", "B) 75% degli stalli", "C) >97% degli stalli"],            "c": "B", "s": "Un margine del 25% di stalli non occupati è un ottimo risultato.."},
+        {"t": "Provincia o città?",   "o": ["A) Permessi in città", "B) Costo dei terreni", "C) Potenza della rete"],        "c": "B", "s": "Grazie a costi del terreno inferiori a fronte di chilometraggi elevati e costi identici per gasolio/benzina e manutenzione."},
+        {"t": "Perché standard industriali?",  "o": ["A) Uptime", "B) Estetica e brand", "C) Controllo dei costi"],          "c": "A", "s": "Sono necessari componenti progettati su misura, ridondati, con magazzino ricambi locale e manutenzione statistica o predittiva."},
 
     ],
     7: [
