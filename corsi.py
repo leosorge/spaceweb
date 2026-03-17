@@ -51,7 +51,7 @@ QUIZ_DATI = {
         "sponsor": "TBD",
         "premio": "Coming Soon",
         "data_mod": "00/00/00",
-        "logo": "https://spaceweb-9dgjpsvp6rvbpwtfkujrxd.streamlit.app/~/+/media/a2c88a3daa355c35583358d77791a7b2f43269db27f7d27fda3c6020.png" # <--- AGGIUNTO QUI
+        "logo": "https://onewedge.com/wp-content/uploads/2023/12/new-header-3.png" # <--- AGGIUNTO QUI
     }
 }
 
