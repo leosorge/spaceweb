@@ -40,11 +40,11 @@ QUIZ_DATI = {
         "logo": "https://vincos.it/wp-content/uploads/2026/02/vincos-logo.png" # <--- AGGIUNTO QUI
     },
     6: {
-        "nome": "Quiz 6",
-        "sponsor": "TBD",
-        "premio": "Coming Soon",
-        "data_mod": "00/00/00",
-        "logo": "https://spaceweb-9dgjpsvp6rvbpwtfkujrxd.streamlit.app/~/+/media/a2c88a3daa355c35583358d77791a7b2f43269db27f7d27fda3c6020.png" # <--- AGGIUNTO QUI
+        "nome": "Electric Plazas Economy",
+        "sponsor": "One Wedge",
+        "premio": "ricari-card 20€",
+        "data_mod": "17/03/26",
+        "logo": "https://onewedge.com/wp-content/uploads/2023/12/new-header-3.png" # <--- AGGIUNTO QUI
     },
     7: {
         "nome": "Quiz 7",
@@ -92,11 +92,12 @@ DOMANDE = {
         {"t": "Focus di Midjourney vs concorrenti?",    "o": ["A) Strumenti marketing", "B) Strada artistica e originalità", "C) Solo testi"], "c": "B", "s": "Privilegia la capacità espressiva unica rispetto all'editing commerciale."},
     ],
     6: [
-        {"t": "Principale vettore di attacco LLM?",    "o": ["A) Prompt Injection", "B) Memoria conversazionale", "C) Mancanza DB"],         "c": "B", "s": "La memoria conversazionale induce deriva cognitiva."},
-        {"t": "Sicurezza hard-enforcement a chi?",      "o": ["A) Backend LLM", "B) Utente finale", "C) Orchestratore"],                       "c": "C", "s": "Delegata a un ente esterno al processo generativo."},
-        {"t": "Cos'è il Context Compliance Attack?",    "o": ["A) Manipola cronologia", "B) Virus server", "C) Crittografia"],                 "c": "A", "s": "Manipola la cronologia per erodere vincoli di sicurezza."},
-        {"t": "Nel Sandwich, LLM è considerato:",       "o": ["A) Garante sicurezza", "B) Motore inaffidabile", "C) Filtro in uscita"],        "c": "B", "s": "Motore potente ma inaffidabile da isolare in sandbox."},
-        {"t": "Cosa sfrutta l'Assistant Prefilling?",   "o": ["A) RAG", "B) Falso messaggio assistente", "C) Shadow AI"],                     "c": "B", "s": "Inietta stato deliberativo fittizio per azioni non autorizzate."},
+        {"t": "Quale standard infrastruttura?",   "o": ["A) ISO 9001", "B) Amazon DSP2", "C) Autostrade europee"],           "c": "C", "s": "Amazon DSP2 è il più stringente degli standard per recinzioni e sorveglianza."},
+        {"t": "Come stabilizza il prezzo?",  "o": ["A) Sussidi statali/regionali", "B) Energy Storage", "C) Acquisti spot"], "c": "C", "s": "Grandi batterie (fino a 18 MWh) massimizzano il successo di contratti PPA a lungo termine."},
+        {"t": "Occupancy target?",   "o": ["A) 50% degli stalli", "B) 75% degli stalli", "C) >97% degli stalli"],            "c": "C", "s": "Un margine del 25% di stalli non occupati è un ottimo risultato.."},
+        {"t": "Provincia o città?",   "o": ["A) Permessi in città", "B) Costo dei terreni", "C) Potenza della rete"],        "c": "C", "s": "Grazie a costi del terreno inferiori a fronte di chilometraggi elevati e costi identici per gasolio/benzina e manutenzione."},
+        {"t": "Perché standard industriali?",  "o": ["A) Estetica e brand", "B) Uptime", "C) Controllo dei costi"],          "c": "C", "s": "Sono necessari componenti progettati su misura, ridondati, con magazzino ricambi locale e manutenzione statistica o predittiva."},
+
     ],
     7: [
         {"t": "Differenza qubit logici e fisici?",      "o": ["A) HW vs SW", "B) Logici correggono errori", "C) Temperatura"],                "c": "B", "s": "I qubit logici raggruppano fisici instabili per affidabilità."},
