@@ -152,7 +152,7 @@ def Portafoglio():
             logo_corso = info.get('logo', logo_default)
             unita = "Qwat" if q_id == 2 else "Punti"
 
-            if q_id > 5:
+            if q_id > 6:
                 html_card = f"""
                 <div class="card-container card-coming">
                     <div class="card-title" style="color: #666;">🕒 COMING SOON</div>
