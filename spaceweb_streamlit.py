@@ -114,7 +114,7 @@ try:
     import corsi
     DOMANDE = getattr(corsi, "DOMANDE", {})
     QUIZ_NOMI = getattr(corsi, "QUIZ_NOMI", None)
-    st.write("DEBUG DOMANDE 6:", DOMANDE.get(6))
+
     if QUIZ_NOMI is None:
         quiz_dati = getattr(corsi, "QUIZ_DATI", {})
         QUIZ_NOMI = {
