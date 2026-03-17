@@ -67,22 +67,32 @@ streamlit run spaceweb_streamlit.py
 
 ## 🔁 Creare un nuovo progetto se non puoi fare Fork
 
-Se sei già owner del repository originale (es. `numerology`) e GitHub non ti consente il fork, puoi creare un nuovo repository derivato con questo flusso:
+Se sei già owner del repository originale (es. `numerology`) e GitHub non ti consente il fork, puoi creare un nuovo repository derivato in modo sicuro:
 
 ```bash
-# 1) Clona il progetto sorgente
+# 1) Clona il progetto sorgente in una nuova cartella
 git clone https://github.com/<owner>/numerology.git nuovo-progetto
 cd nuovo-progetto
 
-# 2) Scollega il remote originale
-git remote remove origin
+# 2) Rinomina il remote originale in "upstream" (opzionale ma consigliato)
+git remote rename origin upstream
 
-# 3) Crea un nuovo repository su GitHub (vuoto), poi collega il nuovo remote
+# 3) Crea un nuovo repository su GitHub (vuoto) e collegalo come "origin"
 git remote add origin https://github.com/<tuo-user>/nuovo-progetto.git
 
 # 4) Pubblica il codice sul nuovo repo
 git push -u origin main
 ```
+
+Per verificare i collegamenti:
+
+```bash
+git remote -v
+```
+
+Output atteso:
+- `origin` -> tuo nuovo repository
+- `upstream` -> repository sorgente (numerology)
 
 In alternativa, puoi usare **Use this template** se il repository sorgente è marcato come template.
 
