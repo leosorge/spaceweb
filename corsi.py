@@ -42,7 +42,7 @@ QUIZ_DATI = {
     6: {
         "nome": "Electric Plazas Economy",
         "sponsor": "One Wedge",
-        "premio": "ricari-card 20€",
+        "premio": "Ricari-card 20€",
         "data_mod": "17/03/26",
         "logo": "https://onewedge.com/wp-content/uploads/2023/12/new-header-3.png" # <--- AGGIUNTO QUI
     },
@@ -97,7 +97,6 @@ DOMANDE = {
         {"t": "Occupancy target?",   "o": ["A) 50% degli stalli", "B) 75% degli stalli", "C) >97% degli stalli"],            "c": "B", "s": "Un margine del 25% di stalli non occupati è un ottimo risultato.."},
         {"t": "Provincia o città?",   "o": ["A) Permessi in città", "B) Costo dei terreni", "C) Potenza della rete"],        "c": "B", "s": "Grazie a costi del terreno inferiori a fronte di chilometraggi elevati e costi identici per gasolio/benzina e manutenzione."},
         {"t": "Perché standard industriali?",  "o": ["A) Uptime", "B) Estetica e brand", "C) Controllo dei costi"],          "c": "A", "s": "Sono necessari componenti progettati su misura, ridondati, con magazzino ricambi locale e manutenzione statistica o predittiva."},
-
     ],
     7: [
         {"t": "Differenza qubit logici e fisici?",      "o": ["A) HW vs SW", "B) Logici correggono errori", "C) Temperatura"],                "c": "B", "s": "I qubit logici raggruppano fisici instabili per affidabilità."},
