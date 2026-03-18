@@ -253,6 +253,8 @@ def nuova_partita(nome):
     st.session_state.starfleet_alert  = False
     st.session_state.tempesta_pending = None
     st.session_state.sound_event      = ""
+    st.session_state.oracolo_txt      = "🌌 In attesa di saggezza cosmica..."
+    st.session_state.esplosione       = []
     st.session_state.schermata        = "gioco"
 
 def esegui_mossa(dx, dy):
@@ -402,14 +404,14 @@ def play_sound_event(event: str):
     if not event:
         return
     sound_map = {
-        "bonus":     ("sine",     880, 0.18, 0.18),
-        "danger":    ("sawtooth", 180, 0.30, 0.20),
-        "warn":      ("square",   440, 0.15, 0.12),
-        "stealth":   ("sine",     220, 0.25, 0.10),
-        "alert":     ("square",   660, 0.20, 0.15),
-        "explosion": ("sawtooth", 120, 0.45, 0.22),
-        "gameover":  ("sawtooth",  80, 0.60, 0.25),
-        "victory":   ("sine",    1047, 0.50, 0.20),
+        "bonus":     ("sine",     880, 0.18, 0.55),
+        "danger":    ("sawtooth", 180, 0.30, 0.60),
+        "warn":      ("square",   440, 0.15, 0.45),
+        "stealth":   ("sine",     220, 0.25, 0.40),
+        "alert":     ("square",   660, 0.20, 0.50),
+        "explosion": ("sawtooth", 120, 0.45, 0.65),
+        "gameover":  ("sawtooth",  80, 0.60, 0.70),
+        "victory":   ("sine",    1047, 0.50, 0.60),
     }
     if event not in sound_map:
         return
@@ -771,7 +773,7 @@ def schermata_login():
             if st.button("🚀 ACCEDI", type="primary", key="btn_accedi"):
                 if nome.strip():
                     if nome.strip().lower() == "adm":
-                        st.session_state.schermata = "admin"
+                        st.session_state.adm_pwd_step = True
                         st.rerun()
                     else:
                         st.session_state.nome = nome.strip()
@@ -791,9 +793,28 @@ def schermata_login():
                         nuova_partita(nome.strip())
                         st.rerun()
         with colB:
-            if st.button("📊 ADMIN", key="btn_admin_login"):
-                st.session_state.schermata = "admin"
-                st.rerun()
+            if st.button("🔐 ADM", key="btn_admin_login"):
+                if "adm_pwd_step" not in st.session_state:
+                    st.session_state.adm_pwd_step = True
+                    st.rerun()
+
+    # Gestione password ADM
+    if st.session_state.get("adm_pwd_step"):
+        with col2:
+            pwd = st.text_input("🔑 Password ADM:", type="password", key="adm_pwd_input")
+            c1, c2b = st.columns(2)
+            with c1:
+                if st.button("✅ Conferma", key="adm_pwd_ok"):
+                    if pwd == "2099":
+                        st.session_state.adm_pwd_step = False
+                        st.session_state.schermata = "admin"
+                        st.rerun()
+                    else:
+                        st.error("❌ Password errata")
+            with c2b:
+                if st.button("✖ Annulla", key="adm_pwd_cancel"):
+                    st.session_state.adm_pwd_step = False
+                    st.rerun()
 
 # ============================================================
 # SCHERMATA ADMIN
@@ -1093,6 +1114,7 @@ def schermata_gioco():
         STEPS = [-5, -4, -3, -2, -1, +1, +2, +3, +4, +5]
 
         # ΔX label + 10 tasti sulla stessa riga
+        # Premere X resetta y_selected per forzare una scelta Y fresca
         x_pressed = False
         x_row = st.columns([1] + [1]*len(STEPS))
         with x_row[0]:
@@ -1103,9 +1125,11 @@ def schermata_gioco():
                 if st.button(label, key=f"btn_x_{val}", width="stretch"):
                     ss.nav_target_x = val
                     ss.nav_x_selected = True
+                    ss.nav_y_selected = False  # reset Y: obbliga a scegliere Y dopo X
                     x_pressed = True
 
         # ΔY label + 10 tasti sulla stessa riga
+        # Premere Y resetta x_selected per forzare una scelta X fresca
         y_pressed = False
         y_row = st.columns([1] + [1]*len(STEPS))
         with y_row[0]:
@@ -1116,15 +1140,22 @@ def schermata_gioco():
                 if st.button(label, key=f"btn_y_{val}", width="stretch"):
                     ss.nav_target_y = val
                     ss.nav_y_selected = True
+                    ss.nav_x_selected = False  # reset X: obbliga a scegliere X dopo Y
                     y_pressed = True
 
-        # FIX 1: mossa solo quando entrambi i valori sono presenti
-        if (x_pressed or y_pressed) and ss.nav_x_selected and ss.nav_y_selected:
-            dx = ss.nav_target_x
-            dy = ss.nav_target_y
+        # Mossa: parte solo se nell'ultimo rerun è stato premuto un tasto
+        # E l'altro asse era già selezionato (x_pressed con y già ok, o viceversa)
+        if x_pressed and ss.nav_y_selected:
+            # X appena premuto, Y già in attesa → esegui
             ss.nav_x_selected = False
             ss.nav_y_selected = False
-            esegui_mossa(dx, dy)
+            esegui_mossa(ss.nav_target_x, ss.nav_target_y)
+            st.rerun()
+        elif y_pressed and ss.nav_x_selected:
+            # Y appena premuto, X già in attesa → esegui
+            ss.nav_x_selected = False
+            ss.nav_y_selected = False
+            esegui_mossa(ss.nav_target_x, ss.nav_target_y)
             st.rerun()
 
         # ── SISTEMI in orizzontale ────────────────────────────────────────
@@ -1132,7 +1163,9 @@ def schermata_gioco():
                     unsafe_allow_html=True)
         s1, s2, s3, s4 = st.columns(4)
         with s1:
-            if st.button("📊 DB",    key="btn_db",     width="stretch"): ss.schermata = "admin"; st.rerun()
+            if st.button("🔐 ADM",  key="btn_db",     width="stretch"):
+                ss.adm_pwd_step = True
+                st.rerun()
         with s2:
             if st.button("🎓 Quiz",  key="btn_quiz",   width="stretch"): ss.quiz_tipo = None; ss.schermata = "quiz"; st.rerun()
         with s3:
