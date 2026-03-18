@@ -679,6 +679,7 @@ def schermata_gioco():
 
 # 21/03/26 21:49
 def schermata_numerologia():
+    from numerologia_testi import arr_tots, arr_data, arr_comb
     import time
     ss = st.session_state
     mostra_testata_finale_arcade()
@@ -701,23 +702,31 @@ def schermata_numerologia():
     try:
         totale_nome = name_total_number(nome)
         totale_data = life_path_number(data_num)
+        testo_nome    = arr_tots[totale_nome - 1]
+        testo_data    = arr_data[totale_data - 1]
+        indice_comb   = (totale_nome - 1) * 9 + (totale_data - 1)
+        testo_comb    = arr_comb[indice_comb]
 
         st.markdown(f"""
         <div style="font-family:'Share Tech Mono',monospace; color:#e0e8ff; font-size:1.1rem; line-height:2.2; padding:1rem;">
-            <div style="color:#ffd34d; font-size:1.3rem; margin-bottom:1rem;">
+            <div style="color:#ffd34d; font-size:1.3rem; margin-bottom:1.5rem;">
                 👤 Cadetto: <b>{nome}</b> &nbsp;|&nbsp; 📅 Codice partita: <b>{data_num}</b>
             </div>
             <div style="margin-bottom:1.5rem;">
-                <span style="color:#88ccff;">◈ Numero del Nome:</span>
-                <span style="color:#ffd34d; font-size:2rem; font-weight:900; margin-left:1rem;">{totale_nome}</span>
+                <span style="color:#88ccff;">◈ Numero del Nome: <b>{totale_nome}</b></span><br>
+                <span style="color:#ccddff;">{testo_nome[2:]}</span>
             </div>
             <div style="margin-bottom:1.5rem;">
-                <span style="color:#88ccff;">◈ Numero della Partita:</span>
-                <span style="color:#ffd34d; font-size:2rem; font-weight:900; margin-left:1rem;">{totale_data}</span>
+                <span style="color:#88ccff;">◈ Numero della Partita: <b>{totale_data}</b></span><br>
+                <span style="color:#ccddff;">{testo_data[2:]}</span>
+            </div>
+            <div style="margin-bottom:1rem; padding:1rem; background:rgba(255,211,77,0.08); border-radius:12px; border:1px solid #ffd34d44;">
+                <span style="color:#ffd34d;">◈ Combinazione Nome × Partita</span><br><br>
+                <span style="color:#e0e8ff;">{testo_comb}</span>
             </div>
         </div>
         """, unsafe_allow_html=True)
-
+        
     except Exception as e:
         st.error(f"Errore calcolo numerologico: {e}")
 
