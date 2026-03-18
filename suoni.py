@@ -1,7 +1,9 @@
 # suoni.py
+# Gestione effetti sonori Web Audio per Space Web
 import streamlit.components.v1 as components
 
 def play_sound_event(event: str):
+    """Suona un breve effetto Web Audio in base al tipo di evento."""
     if not event:
         return
     sound_map = {
