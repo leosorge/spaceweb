@@ -602,14 +602,12 @@ def mostra_intro_arcade():
           }
           requestAnimationFrame(draw);
 
-          let audioStarted = false;
-          function startAudio() {
-            if (audioStarted) return;
-            audioStarted = true;
-            const ac = new (window.AudioContext || window.webkitAudioContext)();
-            const master = ac.createGain();
-            master.gain.value = 0.07;
-            master.connect(ac.destination);
+          let audioCtx = null;
+          let master = null;
+          let seqTimer = null;
+          let playing = false;
+
+          function playSequence(ac, out) {
             const bpm = 120;
             const beat = 60 / bpm;
             const notes = [261.63, 329.63, 392.0, 523.25, 392.0, 329.63];
@@ -619,10 +617,10 @@ def mostra_intro_arcade():
               osc.type = i % 2 ? "square" : "sawtooth";
               osc.frequency.value = notes[i % notes.length] * (i % 8 === 0 ? 0.5 : 1);
               gain.gain.setValueAtTime(0.0001, ac.currentTime + i * beat / 2);
-              gain.gain.exponentialRampToValueAtTime(0.11, ac.currentTime + i * beat / 2 + 0.01);
+              gain.gain.exponentialRampToValueAtTime(0.14, ac.currentTime + i * beat / 2 + 0.01);
               gain.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + i * beat / 2 + 0.21);
               osc.connect(gain);
-              gain.connect(master);
+              gain.connect(out);
               osc.start(ac.currentTime + i * beat / 2);
               osc.stop(ac.currentTime + i * beat / 2 + 0.22);
             }
@@ -632,20 +630,80 @@ def mostra_intro_arcade():
             boom.frequency.setValueAtTime(180, ac.currentTime + 6.1);
             boom.frequency.exponentialRampToValueAtTime(55, ac.currentTime + 6.55);
             boomG.gain.setValueAtTime(0.0001, ac.currentTime + 6.05);
-            boomG.gain.exponentialRampToValueAtTime(0.16, ac.currentTime + 6.13);
+            boomG.gain.exponentialRampToValueAtTime(0.18, ac.currentTime + 6.13);
             boomG.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + 6.8);
             boom.connect(boomG);
-            boomG.connect(master);
+            boomG.connect(out);
             boom.start(ac.currentTime + 6.05);
             boom.stop(ac.currentTime + 6.9);
-            document.getElementById("sw-audio-btn").innerText = "♪ Audio attivo";
-            document.getElementById("sw-audio-btn").disabled = true;
           }
-          document.getElementById("sw-audio-btn").addEventListener("click", startAudio);
+
+          function startAudio() {
+            if (playing) return;
+            if (!audioCtx) {
+              audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+              master = audioCtx.createGain();
+              master.gain.value = 0.12;
+              master.connect(audioCtx.destination);
+            }
+            playing = true;
+            playSequence(audioCtx, master);
+            seqTimer = setInterval(() => {
+              if (playing) playSequence(audioCtx, master);
+            }, total * 1000);
+            const btn = document.getElementById("sw-audio-btn");
+            btn.innerText = "🔊 Audio ON";
+            btn.disabled = false;
+          }
+
+          function stopAudio() {
+            playing = false;
+            if (seqTimer) clearInterval(seqTimer);
+            seqTimer = null;
+            const btn = document.getElementById("sw-audio-btn");
+            btn.innerText = "▶ Audio arcade";
+            btn.disabled = false;
+          }
+
+          function toggleAudio() {
+            if (playing) stopAudio();
+            else startAudio();
+          }
+
+          function autoEnableOnce() {
+            if (!playing) startAudio();
+            window.removeEventListener("pointerdown", autoEnableOnce);
+            window.removeEventListener("keydown", autoEnableOnce);
+          }
+
+          window.addEventListener("pointerdown", autoEnableOnce);
+          window.addEventListener("keydown", autoEnableOnce);
+          document.getElementById("sw-audio-btn").addEventListener("click", toggleAudio);
         })();
         </script>
         """,
         height=250,
+    )
+
+#####
+# mostra_testata_finale_arcade - 18/03/26
+#####
+def mostra_testata_finale_arcade():
+    """Ultimo frame dell'animazione usato come testata statica nel tabellone di gioco."""
+    st.markdown(
+        """
+        <div style="position:relative;width:100%;height:118px;background:#020510;border:1px solid #22334f;border-radius:12px;overflow:hidden;margin:.25rem 0 .75rem 0;">
+          <div style="position:absolute;inset:0;background:
+            radial-gradient(circle at 54% 54%, rgba(255,170,235,0.95) 0%, rgba(255,55,180,0.45) 20%, rgba(255,30,160,0) 46%),
+            radial-gradient(circle at 18% 32%, rgba(145,190,255,0.18) 0%, rgba(0,0,0,0) 42%),
+            radial-gradient(circle at 76% 68%, rgba(156,126,255,0.15) 0%, rgba(0,0,0,0) 44%);
+          "></div>
+          <div style="position:absolute;left:50%;top:52%;transform:translate(-50%,-50%);font:900 56px 'Arial Black', Impact, sans-serif;color:#d7ab2d;letter-spacing:2px;text-shadow:0 0 18px rgba(255,194,65,.65), 2px 2px 0 #513000;">
+            SPACE WEB
+          </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
     )
 
 # ============================================================
@@ -827,7 +885,10 @@ def schermata_gioco():
     if "nav_y_selected" not in ss:
         ss.nav_y_selected = False
 
-    mostra_testata()
+#####
+# mostra_testata_finale_arcade - 18/03/26
+#####
+mostra_testata_finale_arcade()
 
     # ── UNICA RIGA: Mappa | Ship Status+EventLog+Nav+Sistemi | Legenda ──
     col_mappa, col_status, col_legenda = st.columns([3, 2, 1])
