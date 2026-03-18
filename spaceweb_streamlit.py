@@ -505,9 +505,15 @@ def mostra_intro_arcade():
     """Animazione stile arcade anni '80 con typo SPACY -> SPACE WEB + esplosione rosa."""
     components.html(
         """
+        <style>
+          @keyframes swPulse {
+            0%   { box-shadow: 0 0 0 rgba(255,211,77,0.00), 0 0 0 rgba(255,120,220,0.00); }
+            100% { box-shadow: 0 0 10px rgba(255,211,77,0.70), 0 0 18px rgba(255,120,220,0.45); }
+          }
+        </style>
         <div id="sw-intro-wrap" style="position:relative;width:100%;height:230px;background:#030617;border:1px solid #22334f;border-radius:12px;overflow:hidden;margin:.25rem 0 1rem 0;">
           <canvas id="sw-intro-canvas" width="1280" height="460" style="width:100%;height:100%;display:block;"></canvas>
-          <button id="sw-audio-btn" style="position:absolute;right:14px;bottom:12px;background:#0f1733;color:#ffd34d;border:1px solid #42598f;padding:6px 10px;border-radius:8px;font-family:monospace;cursor:pointer;">▶ Audio arcade</button>
+          <button id="sw-audio-btn" style="position:absolute;right:14px;bottom:12px;background:#0f1733;color:#ffd34d;border:1px solid #42598f;padding:6px 10px;border-radius:8px;font-family:monospace;cursor:pointer;animation:swPulse 1.1s ease-in-out infinite alternate;">🎵 Audio ON</button>
         </div>
         <script>
         (() => {
