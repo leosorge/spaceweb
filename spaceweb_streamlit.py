@@ -926,7 +926,7 @@ def schermata_gioco():
         ss.nav_x_selected = False
     if "nav_y_selected" not in ss:
         ss.nav_y_selected = False
-     if "sound_event" not in ss:        # ← AGGIUNGI
+    if "sound_event" not in ss:        # ← AGGIUNGI
         ss.sound_event = ""
 
     mostra_testata_finale_arcade()
