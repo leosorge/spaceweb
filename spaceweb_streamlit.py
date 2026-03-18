@@ -611,7 +611,7 @@ def schermata_gioco():
         st.markdown(f'<div class="oracolo-box {alert_class}" style="font-size:1rem;">{ss.oracolo_txt}</div>', unsafe_allow_html=True)
 
         st.markdown('<div class="section-title" style="margin-top:1rem;font-size:1rem;">🕹 NAVIGAZIONE</div>', unsafe_allow_html=True)
-        STEPS = [-5,-4,-3,-2,-1,+1,+2,+3,+4,+5]
+        STEPS = [-3,-2,-1,0,+1,+2,+3]
         LABELS = [f"+{v}" if v>0 else str(v) for v in STEPS]
 
         col_dx, col_dy, col_go = st.columns([2, 2, 1])
