@@ -265,7 +265,7 @@ def esegui_mossa(dx, dy):
     if not (0 <= nx <= 9 and 0 <= ny <= 9):
         msg = "⚠️ Fuori dai bordi galattici!"
         ss.sound_event = "warn"
-    elif (nx, ny) in ss.l:
+    elif tuple([nx, ny]) in [tuple(x) for x in ss.l]:
         danno = 20
         if ss.scudo > 0:
             assorbito = min(ss.scudo, danno // 2)
@@ -284,7 +284,7 @@ def esegui_mossa(dx, dy):
         else:
             ss.pos = [nx, ny]
             ss.w  -= costo
-            if (nx, ny) in ss.q:
+            if tuple([nx, ny]) in [tuple(x) for x in ss.q]:
                 bonus_e = 20
                 bonus_s = 10
                 ss.w    += bonus_e
@@ -292,7 +292,7 @@ def esegui_mossa(dx, dy):
                 ss.q.remove((nx, ny))
                 msg += f"🟢 Bonus! +{bonus_e} energia, +{bonus_s} scudo. "
                 ss.sound_event = "bonus"
-            if (nx, ny) in ss.s:
+            if tuple([nx, ny]) in [tuple(x) for x in ss.s]:
                 ss.w -= 15
                 ss.s.remove((nx, ny))
                 msg += "⚫ Campo stealth! -15 energia. "
@@ -926,13 +926,13 @@ def schermata_gioco():
         ss.nav_x_selected = False
     if "nav_y_selected" not in ss:
         ss.nav_y_selected = False
-    if "sound_event" not in ss:        # ← AGGIUNGI
+    if "sound_event" not in ss:
         ss.sound_event = ""
 
     mostra_testata_finale_arcade()
 
     # FIX 4: suona l'evento e consuma il flag
-    play_sound_event(ss.get("sound_event", ""))
+    play_sound_event(ss.sound_event)
     ss.sound_event = ""
 
     # Layout principale: Mappa | Ship Status+EventLog+Nav+Sistemi | Legenda
