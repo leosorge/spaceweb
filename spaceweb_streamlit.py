@@ -679,7 +679,7 @@ def schermata_gioco():
 
 # 21/03/26 21:49
 def schermata_numerologia():
-    from numerologia_testi import arr_tots, arr_data, arr_comb
+    from numerology_texts import arr_tots, arr_data, arr_comb
     import time
     ss = st.session_state
     mostra_testata_finale_arcade()
