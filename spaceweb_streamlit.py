@@ -1,12 +1,5 @@
 # ============================================================
 #  🚀 SPACE WEB — Chissà che fa questa versione!
-# rispetto alla precedente bisogna eliminare la pulsantiera
-#  la navigazione con i flag nav_x_selected/nav_y_selected non funziona in Streamlit perché ogni click fa un rerun separato e i flag non si sincronizzano.
-# La soluzione è usare un approccio completamente diverso: un solo selectbox o number_input per X e un bottone GO, 
-# invece dei 10 tasti per asse. Ran 3 commands, read a fileRan 3 commands, read a fileNavigazione completamente cambiata — addio ai 20 bottoni con flag. Ora:
-# [ ΔX ▼ -3 ]  [ ΔY ▼ +2 ]  [ 🚀 VAI ]
-# Due selectbox e un bottone. Il click su VAI legge direttamente i valori selezionati e chiama esegui_mossa — zero flag, 
-# zero sincronizzazione tra rerun, zero problemi.
 #  Avvio: streamlit run spaceweb_streamlit.py
 # ============================================================
 
