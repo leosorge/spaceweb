@@ -405,89 +405,104 @@ def esegui_mossa(dx, dy):
 # ============================================================
 def disegna_griglia():
     ss  = st.session_state
-    fig = plt.figure(figsize=(7, 7))
-    fig.patch.set_facecolor('#02040f')
-    ax  = fig.add_axes([0.06, 0.04, 0.91, 0.93])
-    ax.set_facecolor('#030612')
-    ax.set_xlim(-0.5, 9.5)
-    ax.set_ylim(-0.5, 9.5)
-    ax.set_xticks(range(10))
-    ax.set_yticks(range(10))
-    ax.tick_params(colors='#334466', labelsize=8)
-    ax.grid(True, linestyle='-', linewidth=1, alpha=0.4, color='#1a2a44')
+    try:
+        fig = plt.figure(figsize=(7, 7))
+        fig.patch.set_facecolor('#02040f')
+        ax  = fig.add_axes([0.06, 0.04, 0.91, 0.93])
+        ax.set_facecolor('#030612')
+        ax.set_xlim(-0.5, 9.5)
+        ax.set_ylim(-0.5, 9.5)
+        ax.set_xticks(range(10))
+        ax.set_yticks(range(10))
+        ax.tick_params(colors='#334466', labelsize=8)
+        ax.grid(True, linestyle='-', linewidth=1, alpha=0.4, color='#1a2a44')
 
-    bg_path = "p_background.png"
-    if os.path.exists(bg_path):
-        import matplotlib.image as mpimg
-        img = mpimg.imread(bg_path)
-        ax.imshow(img, extent=[-0.5,9.5,-0.5,9.5], alpha=0.65, zorder=0)
+        bg_path = "p_background.png"
+        if os.path.exists(bg_path):
+            import matplotlib.image as mpimg
+            img = mpimg.imread(bg_path)
+            ax.imshow(img, extent=[-0.5,9.5,-0.5,9.5], alpha=0.65, zorder=0)
 
-    from matplotlib.patches import Ellipse
-    neb1 = Ellipse((3, 5), width=5, height=4, angle=20,
-                   facecolor='#2a0a5a', alpha=0.12, zorder=1)
-    neb2 = Ellipse((7, 2), width=4, height=3, angle=-15,
-                   facecolor='#0a2050', alpha=0.10, zorder=1)
-    ax.add_patch(neb1)
-    ax.add_patch(neb2)
+        from matplotlib.patches import Ellipse
+        neb1 = Ellipse((3, 5), width=5, height=4, angle=20,
+                       facecolor='#2a0a5a', alpha=0.12, zorder=1)
+        neb2 = Ellipse((7, 2), width=4, height=3, angle=-15,
+                       facecolor='#0a2050', alpha=0.10, zorder=1)
+        ax.add_patch(neb1)
+        ax.add_patch(neb2)
 
-    ax.add_patch(plt.Circle((9, 9), 0.45, color='#0044cc', alpha=0.25, zorder=2))
-    ax.add_patch(plt.Circle((9, 9), 0.25, color='#2266ff', alpha=0.5,  zorder=2))
-    ax.plot(9, 9, 'o', markersize=9, color='#4488ff',
-            markeredgecolor='white', markeredgewidth=0.8, zorder=3)
+        ax.add_patch(plt.Circle((9, 9), 0.45, color='#0044cc', alpha=0.25, zorder=2))
+        ax.add_patch(plt.Circle((9, 9), 0.25, color='#2266ff', alpha=0.5,  zorder=2))
+        ax.plot(9, 9, 'o', markersize=9, color='#4488ff',
+                markeredgecolor='white', markeredgewidth=0.8, zorder=3)
 
-    # Normalizza a tuple per sicurezza (Streamlit può deserializzare come liste)
-    _l = [tuple(x) for x in ss.l]
-    _q = [tuple(x) for x in ss.q]
-    _s = [tuple(x) for x in ss.s]
-    _e = [tuple(x) for x in ss.esplosione]
+        # Normalizza tutto a int per sicurezza
+        _l  = [(int(x[0]), int(x[1])) for x in ss.l]
+        _q  = [(int(x[0]), int(x[1])) for x in ss.q]
+        _s  = [(int(x[0]), int(x[1])) for x in ss.s]
+        _e  = [(int(x[0]), int(x[1])) for x in ss.esplosione]
+        enx = int(ss.pos_nemica[0])
+        eny = int(ss.pos_nemica[1])
+        px  = int(ss.pos[0])
+        py  = int(ss.pos[1])
 
-    for ox, oy in _l:
-        ax.add_patch(plt.Circle((ox, oy), 0.38, color='#ff2200', alpha=0.18, zorder=2))
-        ax.plot(ox, oy, 'o', markersize=10, color='#ff3311',
-                markeredgecolor='#ff6644', markeredgewidth=0.8, zorder=3)
+        for ox, oy in _l:
+            ax.add_patch(plt.Circle((ox, oy), 0.38, color='#ff2200', alpha=0.18, zorder=2))
+            ax.plot(ox, oy, 'o', markersize=10, color='#ff3311',
+                    markeredgecolor='#ff6644', markeredgewidth=0.8, zorder=3)
 
-    for bx, by in _q:
-        ax.add_patch(plt.Circle((bx, by), 0.38, color='#00ff88', alpha=0.15, zorder=2))
-        ax.plot(bx, by, 'o', markersize=10, color='#00dd66',
-                markeredgecolor='#88ffcc', markeredgewidth=0.8, zorder=3)
+        for bx, by in _q:
+            ax.add_patch(plt.Circle((bx, by), 0.38, color='#00ff88', alpha=0.15, zorder=2))
+            ax.plot(bx, by, 'o', markersize=10, color='#00dd66',
+                    markeredgecolor='#88ffcc', markeredgewidth=0.8, zorder=3)
 
-    for sx, sy in _s:
-        ax.plot(sx, sy, 'o', markersize=11, color='none',
-                markeredgecolor='#8899aa', markeredgewidth=1.5,
-                linestyle='--', zorder=3)
+        for sx, sy in _s:
+            ax.plot(sx, sy, 'o', markersize=11, color='none',
+                    markeredgecolor='#8899aa', markeredgewidth=1.5,
+                    linestyle='--', zorder=3)
 
-    for ex, ey in _e:
-        ax.add_patch(plt.Circle((ex, ey), 0.48, color='#ff44aa', alpha=0.35, zorder=4))
-        ax.plot(ex, ey, 'o', markersize=18, color='hotpink', alpha=0.45, zorder=4)
+        for ex, ey in _e:
+            ax.add_patch(plt.Circle((ex, ey), 0.48, color='#ff44aa', alpha=0.35, zorder=4))
+            ax.plot(ex, ey, 'o', markersize=18, color='hotpink', alpha=0.45, zorder=4)
 
-    enx, eny = ss.pos_nemica
-    ax.add_patch(plt.Circle((enx, eny), 0.5, color='#ff0000', alpha=0.15, zorder=4))
-    ax.scatter(enx, eny, marker=astronave_nemica_path, s=420,
-               color='#ff2200', edgecolor='#ff6600', linewidth=1.5, zorder=5)
+        ax.add_patch(plt.Circle((enx, eny), 0.5, color='#ff0000', alpha=0.15, zorder=4))
+        ax.scatter(enx, eny, marker=astronave_nemica_path, s=420,
+                   color='#ff2200', edgecolor='#ff6600', linewidth=1.5, zorder=5)
 
-    px, py = ss.pos
-    scudo_alpha = ss.scudo / 200.0
-    if ss.scudo > 0:
-        ax.add_patch(plt.Circle((px, py), 0.58, color='#4499ff',
-                                alpha=scudo_alpha, zorder=5))
-        ax.add_patch(plt.Circle((px, py), 0.58, fill=False,
-                                edgecolor='white', linewidth=1))
-    ax.scatter(px, py, marker=astronave_path, s=600,
-               color='#FFD700', edgecolor='#ff8800', linewidth=1.5, zorder=6)
+        scudo_alpha = ss.scudo / 200.0
+        if ss.scudo > 0:
+            ax.add_patch(plt.Circle((px, py), 0.58, color='#4499ff',
+                                    alpha=scudo_alpha, zorder=5))
+            ax.add_patch(plt.Circle((px, py), 0.58, fill=False,
+                                    edgecolor='white', linewidth=1))
+        ax.scatter(px, py, marker=astronave_path, s=600,
+                   color='#FFD700', edgecolor='#ff8800', linewidth=1.5, zorder=6)
 
-    ax.set_title(
-        f"E:{ss.w}  |  SCUDO:{ss.scudo}%  |  Nemico:{tuple(ss.pos_nemica)}",
-        fontsize=8, color='#8899cc', pad=5,
-        fontfamily='monospace'
-    )
-    ax.invert_yaxis()
+        ax.set_title(
+            f"E:{ss.w}  |  SCUDO:{ss.scudo}%  |  Nemico:({enx},{eny})",
+            fontsize=8, color='#8899cc', pad=5, fontfamily='monospace'
+        )
+        ax.invert_yaxis()
 
-    buf = io.BytesIO()
-    plt.savefig(buf, format='png', dpi=115, bbox_inches='tight',
-                facecolor='#02040f')
-    plt.close(fig)
-    buf.seek(0)
-    return buf
+        buf = io.BytesIO()
+        plt.savefig(buf, format='png', dpi=115, bbox_inches='tight',
+                    facecolor='#02040f')
+        plt.close(fig)
+        buf.seek(0)
+        return buf
+
+    except Exception as e:
+        plt.close('all')
+        st.error(f"Errore griglia: {e}")
+        buf = io.BytesIO()
+        fig2, ax2 = plt.subplots(figsize=(7,7))
+        fig2.patch.set_facecolor('#02040f')
+        ax2.set_facecolor('#030612')
+        ax2.text(0.5, 0.5, f"Errore: {e}", color='red', ha='center', va='center', transform=ax2.transAxes)
+        plt.savefig(buf, format='png', dpi=80, bbox_inches='tight', facecolor='#02040f')
+        plt.close(fig2)
+        buf.seek(0)
+        return buf
 
 # ============================================================
 # TESTATA con immagine q_title.png (admin e quiz)
