@@ -397,7 +397,8 @@ def esegui_mossa(dx, dy):
 
 # ============================================================
 # FIX 4: suoni eventi — inietta JS Web Audio con height=0
-# ============================================================def play_sound_event(event: str):
+# ============================================================
+    def play_sound_event(event: str):
     if not event:
         return
     sound_map = {
