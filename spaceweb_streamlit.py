@@ -1216,3 +1216,6 @@ elif schermata_attuale == "gioco":
     schermata_gioco()
 elif schermata_attuale == "portafoglio":
     Portafoglio()
+
+
+if (x_pressed and ss.nav_y_selected) or (y_pressed and ss.nav_x_selected):
