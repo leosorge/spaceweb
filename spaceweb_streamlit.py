@@ -1098,7 +1098,8 @@ def schermata_gioco():
                     unsafe_allow_html=True)
         STEPS = [-5, -4, -3, -2, -1, +1, +2, +3, +4, +5]
 
-        # Navigazione: seleziona ΔX poi ΔY (o viceversa), la mossa parte al secondo click
+        # Navigazione: i bottoni salvano il valore, la mossa parte fuori dai loop
+        x_clicked = None
         x_row = st.columns([1] + [1]*len(STEPS))
         with x_row[0]:
             st.markdown("**ΔX**")
@@ -1106,14 +1107,9 @@ def schermata_gioco():
             with x_row[i+1]:
                 label = f"+{val}" if val > 0 else str(val)
                 if st.button(label, key=f"btn_x_{val}", width="stretch"):
-                    ss.nav_target_x = val
-                    ss.nav_x_selected = True
-                    if ss.nav_y_selected:
-                        ss.nav_x_selected = False
-                        ss.nav_y_selected = False
-                        esegui_mossa(ss.nav_target_x, ss.nav_target_y)
-                        st.rerun()
+                    x_clicked = val
 
+        y_clicked = None
         y_row = st.columns([1] + [1]*len(STEPS))
         with y_row[0]:
             st.markdown("**ΔY**")
@@ -1121,13 +1117,24 @@ def schermata_gioco():
             with y_row[i+1]:
                 label = f"+{val}" if val > 0 else str(val)
                 if st.button(label, key=f"btn_y_{val}", width="stretch"):
-                    ss.nav_target_y = val
-                    ss.nav_y_selected = True
-                    if ss.nav_x_selected:
-                        ss.nav_x_selected = False
-                        ss.nav_y_selected = False
-                        esegui_mossa(ss.nav_target_x, ss.nav_target_y)
-                        st.rerun()
+                    y_clicked = val
+
+        # Aggiorna stato dopo i loop
+        if x_clicked is not None:
+            ss.nav_target_x = x_clicked
+            ss.nav_x_selected = True
+        if y_clicked is not None:
+            ss.nav_target_y = y_clicked
+            ss.nav_y_selected = True
+
+        # Esegui mossa fuori dai loop, solo se entrambi selezionati
+        if (x_clicked is not None and ss.nav_y_selected) or            (y_clicked is not None and ss.nav_x_selected):
+            _dx = ss.nav_target_x
+            _dy = ss.nav_target_y
+            ss.nav_x_selected = False
+            ss.nav_y_selected = False
+            esegui_mossa(_dx, _dy)
+            st.rerun()
 
         # ── SISTEMI in orizzontale ────────────────────────────────────────
         st.markdown('<div class="section-title" style="margin-top:1rem;">▸ SISTEMI</div>',
