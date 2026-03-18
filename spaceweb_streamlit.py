@@ -435,22 +435,28 @@ def disegna_griglia():
     ax.plot(9, 9, 'o', markersize=9, color='#4488ff',
             markeredgecolor='white', markeredgewidth=0.8, zorder=3)
 
-    for ox, oy in ss.l:
+    # Normalizza a tuple per sicurezza (Streamlit può deserializzare come liste)
+    _l = [tuple(x) for x in ss.l]
+    _q = [tuple(x) for x in ss.q]
+    _s = [tuple(x) for x in ss.s]
+    _e = [tuple(x) for x in ss.esplosione]
+
+    for ox, oy in _l:
         ax.add_patch(plt.Circle((ox, oy), 0.38, color='#ff2200', alpha=0.18, zorder=2))
         ax.plot(ox, oy, 'o', markersize=10, color='#ff3311',
                 markeredgecolor='#ff6644', markeredgewidth=0.8, zorder=3)
 
-    for bx, by in ss.q:
+    for bx, by in _q:
         ax.add_patch(plt.Circle((bx, by), 0.38, color='#00ff88', alpha=0.15, zorder=2))
         ax.plot(bx, by, 'o', markersize=10, color='#00dd66',
                 markeredgecolor='#88ffcc', markeredgewidth=0.8, zorder=3)
 
-    for sx, sy in ss.s:
+    for sx, sy in _s:
         ax.plot(sx, sy, 'o', markersize=11, color='none',
                 markeredgecolor='#8899aa', markeredgewidth=1.5,
                 linestyle='--', zorder=3)
 
-    for ex, ey in ss.esplosione:
+    for ex, ey in _e:
         ax.add_patch(plt.Circle((ex, ey), 0.48, color='#ff44aa', alpha=0.35, zorder=4))
         ax.plot(ex, ey, 'o', markersize=18, color='hotpink', alpha=0.45, zorder=4)
 
