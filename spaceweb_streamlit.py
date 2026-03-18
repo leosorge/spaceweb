@@ -289,12 +289,12 @@ def esegui_mossa(dx, dy):
                 bonus_s = 10
                 ss.w    += bonus_e
                 ss.scudo = min(100, ss.scudo + bonus_s)
-                ss.q.remove((nx, ny))
+                ss.q = [x for x in ss.q if tuple(x) != (nx, ny)]
                 msg += f"🟢 Bonus! +{bonus_e} energia, +{bonus_s} scudo. "
                 ss.sound_event = "bonus"
             if tuple([nx, ny]) in [tuple(x) for x in ss.s]:
                 ss.w -= 15
-                ss.s.remove((nx, ny))
+                ss.s = [x for x in ss.s if tuple(x) != (nx, ny)]
                 msg += "⚫ Campo stealth! -15 energia. "
                 if not ss.sound_event:
                     ss.sound_event = "stealth"
@@ -931,10 +931,6 @@ def schermata_gioco():
 
     mostra_testata_finale_arcade()
 
-    # FIX 4: suona l'evento e consuma il flag
-    play_sound_event(ss.sound_event)
-    ss.sound_event = ""
-
     # Layout principale: Mappa | Ship Status+EventLog+Nav+Sistemi | Legenda
     col_mappa, col_status, col_legenda = st.columns([3, 2, 1])
 
@@ -1081,6 +1077,10 @@ def schermata_gioco():
             <span style="color:#88ccff;">●</span> Scudo ({ss.scudo}%)<br>
             <span style="color:hotpink;">●</span> Tempesta (-w/2)
         </div>''', unsafe_allow_html=True)
+
+    # FIX 4: suona l'evento DOPO il rendering delle colonne, fuori dal layout
+    play_sound_event(ss.sound_event)
+    ss.sound_event = ""
 
 # ============================================================
 # ROUTER
