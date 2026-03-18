@@ -397,8 +397,7 @@ def esegui_mossa(dx, dy):
 
 # ============================================================
 # FIX 4: suoni eventi — inietta JS Web Audio con height=0
-# ============================================================
-def play_sound_event(event: str):
+# ============================================================def play_sound_event(event: str):
     if not event:
         return
     sound_map = {
@@ -419,18 +418,20 @@ def play_sound_event(event: str):
     (function(){{
       try {{
         const ac = new (window.AudioContext || window.webkitAudioContext)();
-        const o  = ac.createOscillator();
-        const g  = ac.createGain();
-        o.type = "{wave}";
-        o.frequency.value = {freq};
-        g.gain.setValueAtTime({vol}, ac.currentTime);
-        g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + {dur});
-        o.connect(g); g.connect(ac.destination);
-        o.start(); o.stop(ac.currentTime + {dur});
-      }} catch(e) {{}}
+        ac.resume().then(() => {{
+          const o = ac.createOscillator();
+          const g = ac.createGain();
+          o.type = "{wave}";
+          o.frequency.value = {freq};
+          g.gain.setValueAtTime({vol}, ac.currentTime);
+          g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + {dur});
+          o.connect(g); g.connect(ac.destination);
+          o.start(); o.stop(ac.currentTime + {dur});
+        }});
+      }} catch(e) {{ console.warn("audio error", e); }}
     }})();
     </script>
-    """, height=0)
+    """, height=1)
 
 # ============================================================
 # DISEGNA GRIGLIA
