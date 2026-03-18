@@ -487,8 +487,7 @@ def disegna_griglia():
                 facecolor='#02040f')
     plt.close(fig)
     buf.seek(0)
-    # FIX 2: restituisce bytes per evitare buf vuoto al secondo rerun
-    return buf.read()
+    return buf
 
 # ============================================================
 # TESTATA con immagine q_title.png (admin e quiz)
@@ -1014,8 +1013,9 @@ def schermata_gioco():
     with col_mappa:
         st.markdown('<div class="section-title">🌌 GALAXY VIEW</div>', unsafe_allow_html=True)
         # FIX 1+2: disegna_griglia restituisce bytes freschi ad ogni rerun
-        img_bytes = disegna_griglia()
-        st.image(img_bytes, width="stretch")
+        _buf = disegna_griglia()
+        _buf.seek(0)
+        st.image(_buf, width="stretch")
 
     with col_status:
         st.markdown('<div class="section-title">🚀 SHIP STATUS</div>', unsafe_allow_html=True)
