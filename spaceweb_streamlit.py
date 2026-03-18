@@ -696,9 +696,9 @@ def mostra_intro_arcade():
 #####
 def mostra_testata_finale_arcade():
     """Ultimo frame dell'animazione usato come testata statica nel tabellone di gioco."""
-    st.markdown(
-        """
-        <div style="position:relative;width:100%;height:118px;background:#020510;border:1px solid #22334f;border-radius:12px;overflow:hidden;margin:.25rem 0 .75rem 0;">
+    title_hover = MISSIONE_TESTO.replace("\n", "&#10;")
+    html = """
+        <div title="{title_hover}" style="position:relative;width:100%;height:118px;background:#020510;border:1px solid #22334f;border-radius:12px;overflow:hidden;margin:.25rem 0 .75rem 0;">
           <div style="position:absolute;inset:0;background:
             radial-gradient(circle at 54% 54%, rgba(255,170,235,0.95) 0%, rgba(255,55,180,0.45) 20%, rgba(255,30,160,0) 46%),
             radial-gradient(circle at 18% 32%, rgba(145,190,255,0.18) 0%, rgba(0,0,0,0) 42%),
@@ -708,10 +708,11 @@ def mostra_testata_finale_arcade():
             SPACE WEB
           </div>
         </div>
-        """,
+        """
+    st.markdown(
+        html.format(title_hover=title_hover),
         unsafe_allow_html=True,
     )
-
 # ============================================================
 # SCHERMATA LOGIN
 # ============================================================
