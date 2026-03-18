@@ -398,7 +398,7 @@ def esegui_mossa(dx, dy):
 # ============================================================
 # FIX 4: suoni eventi — inietta JS Web Audio con height=0
 # ============================================================
-    def play_sound_event(event: str):
+def play_sound_event(event: str):
     if not event:
         return
     sound_map = {
@@ -926,6 +926,8 @@ def schermata_gioco():
         ss.nav_x_selected = False
     if "nav_y_selected" not in ss:
         ss.nav_y_selected = False
+     if "sound_event" not in ss:        # ← AGGIUNGI
+        ss.sound_event = ""
 
     mostra_testata_finale_arcade()
 
