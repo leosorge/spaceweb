@@ -870,9 +870,6 @@ def schermata_quiz():
 
     st.markdown('</div>', unsafe_allow_html=True)
 
-# ============================================================
-# SCHERMATA GIOCO
-# ============================================================
 def schermata_gioco():
     ss = st.session_state
 
@@ -885,12 +882,9 @@ def schermata_gioco():
     if "nav_y_selected" not in ss:
         ss.nav_y_selected = False
 
-#####
-# mostra_testata_finale_arcade - 18/03/26
-#####
-mostra_testata_finale_arcade()
+    mostra_testata_finale_arcade()
 
-    # ── UNICA RIGA: Mappa | Ship Status+EventLog+Nav+Sistemi | Legenda ──
+    # Layout principale: Mappa | Ship Status+EventLog+Nav+Sistemi | Legenda
     col_mappa, col_status, col_legenda = st.columns([3, 2, 1])
 
     with col_mappa:
