@@ -1083,8 +1083,7 @@ def schermata_gioco():
                     unsafe_allow_html=True)
         STEPS = [-5, -4, -3, -2, -1, +1, +2, +3, +4, +5]
 
-        # ΔX: salva delta, segna x selezionato
-        x_pressed = False
+        # Navigazione: seleziona ΔX poi ΔY (o viceversa), la mossa parte al secondo click
         x_row = st.columns([1] + [1]*len(STEPS))
         with x_row[0]:
             st.markdown("**ΔX**")
@@ -1094,10 +1093,12 @@ def schermata_gioco():
                 if st.button(label, key=f"btn_x_{val}", width="stretch"):
                     ss.nav_target_x = val
                     ss.nav_x_selected = True
-                    x_pressed = True
+                    if ss.nav_y_selected:
+                        ss.nav_x_selected = False
+                        ss.nav_y_selected = False
+                        esegui_mossa(ss.nav_target_x, ss.nav_target_y)
+                        st.rerun()
 
-        # ΔY: salva delta, segna y selezionato
-        y_pressed = False
         y_row = st.columns([1] + [1]*len(STEPS))
         with y_row[0]:
             st.markdown("**ΔY**")
@@ -1107,16 +1108,11 @@ def schermata_gioco():
                 if st.button(label, key=f"btn_y_{val}", width="stretch"):
                     ss.nav_target_y = val
                     ss.nav_y_selected = True
-                    y_pressed = True
-
-        # Mossa: parte quando uno viene premuto e l'altro era già selezionato
-        if (x_pressed and ss.nav_y_selected) or (y_pressed and ss.nav_x_selected):
-            dx = ss.nav_target_x
-            dy = ss.nav_target_y
-            ss.nav_x_selected = False
-            ss.nav_y_selected = False
-            esegui_mossa(dx, dy)
-            st.rerun()
+                    if ss.nav_x_selected:
+                        ss.nav_x_selected = False
+                        ss.nav_y_selected = False
+                        esegui_mossa(ss.nav_target_x, ss.nav_target_y)
+                        st.rerun()
 
         # ── SISTEMI in orizzontale ────────────────────────────────────────
         st.markdown('<div class="section-title" style="margin-top:1rem;">▸ SISTEMI</div>',
