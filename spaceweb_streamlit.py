@@ -26,6 +26,10 @@ from supabase import create_client, Client
 from portafoglio import Portafoglio
 from suoni import play_sound_event
 
+# 18/03/26 21:43
+from letters_numerology import name_total_number
+from numbers_numerology import life_path_number
+
 MISSIONE_TESTO = (
     "Missione: andare da 0,0 a 9,9 affrontando nemico,\n"
     "mine, tempeste e quiz, passando per i 3 punti verdi\n"
@@ -128,6 +132,7 @@ def init_state():
         st.session_state.quiz_score       = 0
         st.session_state.quiz_msg         = ""
         st.session_state.sound_event      = ""
+        st.session_state.conteggio = []  # [costo_mossa1, costo_mossa2, somma_resto] / 21/03/26 21:43
         st.session_state.nav_target_x     = 0
         st.session_state.nav_target_y     = 0
 
@@ -197,6 +202,7 @@ def nuova_partita(nome):
     st.session_state.tempesta_pending = None
     st.session_state.oracolo_txt      = "🌌 In attesa di saggezza cosmica..."
     st.session_state.sound_event      = ""
+    st.session_state.conteggio = [] # 21/03/26 h21:46
     st.session_state.schermata        = "gioco"
 
 def esegui_mossa(dx, dy):
@@ -205,6 +211,16 @@ def esegui_mossa(dx, dy):
     nx, ny = pos[0]+dx, pos[1]+dy
     msg = ""
     ss.sound_event = ""
+    # registra costo per numerologia / 21/03/26 h21:46
+    costo_tentato = dx**2 + dy**2
+    if len(ss.conteggio) == 0:
+        ss.conteggio.append(min(costo_tentato, 99))   # primo numero, max 2 cifre
+    elif len(ss.conteggio) == 1:
+        ss.conteggio.append(min(costo_tentato, 99))   # secondo numero, max 2 cifre
+    else:
+        if len(ss.conteggio) == 2:
+            ss.conteggio.append(0)                     # inizializza terzo
+        ss.conteggio[2] = min(ss.conteggio[2] + costo_tentato, 9999)
 
     # normalizza liste a tuple per confronto sicuro
     _l = [tuple(int(v) for v in x) for x in ss.l]
@@ -316,6 +332,7 @@ def esegui_mossa(dx, dy):
     elif ss.pos == [9,9]:
         if len(ss.q) == 0:
             msg += "🏆 VITTORIA! Destinazione raggiunta e premio riconosciuto!"; ss.sound_event = "victory"
+            ss.schermata = "numerologia"
         else:
             msg += f"✅ Arrivato a (9,9), ma mancano {len(ss.q)} punto/i verde/i per il premio."
     ss.msg = msg
@@ -667,6 +684,56 @@ def schermata_gioco():
     play_sound_event(ss.sound_event)
     ss.sound_event = ""
 
+# 21/03/26 21:49
+def schermata_numerologia():
+    import time
+    ss = st.session_state
+    mostra_testata_finale_arcade()
+
+    # Attesa 3 secondi solo al primo accesso
+    if not ss.get("numerologia_shown"):
+        ss.numerologia_shown = True
+        import time; time.sleep(3)
+        
+    st.markdown("## 🔢 Analisi numerologica della tua partita")
+    st.markdown("---")
+
+    # Costruisci la data dal conteggio
+    c = ss.get("conteggio", [0, 0, 0])
+    while len(c) < 3: c.append(0)
+    data_num = f"{c[0]:02d}/{c[1]:02d}/{c[2]:04d}"
+
+    nome = ss.get("nome", "")
+
+    try:
+        totale_nome = name_total_number(nome)
+        totale_data = life_path_number(data_num)
+
+        st.markdown(f"""
+        <div style="font-family:'Share Tech Mono',monospace; color:#e0e8ff; font-size:1.1rem; line-height:2.2; padding:1rem;">
+            <div style="color:#ffd34d; font-size:1.3rem; margin-bottom:1rem;">
+                👤 Cadetto: <b>{nome}</b> &nbsp;|&nbsp; 📅 Codice partita: <b>{data_num}</b>
+            </div>
+            <div style="margin-bottom:1.5rem;">
+                <span style="color:#88ccff;">◈ Numero del Nome:</span>
+                <span style="color:#ffd34d; font-size:2rem; font-weight:900; margin-left:1rem;">{totale_nome}</span>
+            </div>
+            <div style="margin-bottom:1.5rem;">
+                <span style="color:#88ccff;">◈ Numero della Partita:</span>
+                <span style="color:#ffd34d; font-size:2rem; font-weight:900; margin-left:1rem;">{totale_data}</span>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    except Exception as e:
+        st.error(f"Errore calcolo numerologico: {e}")
+
+    st.markdown("---")
+    col1, col2, col3 = st.columns([3, 1, 1])
+    with col3:
+        if st.button("🚀 Torna al gioco", key="btn_torna_gioco"):
+            nuova_partita(ss.nome)
+            st.rerun()
 # ============================================================
 # ROUTER
 # ============================================================
@@ -676,3 +743,4 @@ elif schermata_attuale == "admin":       schermata_admin()
 elif schermata_attuale == "quiz":        schermata_quiz()
 elif schermata_attuale == "gioco":       schermata_gioco()
 elif schermata_attuale == "portafoglio": Portafoglio()
+elif schermata_attuale == "numerologia": schermata_numerologia()
