@@ -332,8 +332,8 @@ def disegna_griglia():
         ax.imshow(mpimg.imread(bg_path), extent=[-0.5,9.5,-0.5,9.5], alpha=0.65, zorder=0)
 
     from matplotlib.patches import Ellipse
-    ax.add_patch(Ellipse((3,5),5,4,20,facecolor='#2a0a5a',alpha=0.12,zorder=1))
-    ax.add_patch(Ellipse((7,2),4,3,-15,facecolor='#0a2050',alpha=0.10,zorder=1))
+    ax.add_patch(Ellipse((3,5),5,4,angle=20,facecolor='#2a0a5a',alpha=0.12,zorder=1))
+    ax.add_patch(Ellipse((7,2),4,3,angle=-15,facecolor='#0a2050',alpha=0.10,zorder=1))
     ax.add_patch(plt.Circle((9,9),0.45,color='#0044cc',alpha=0.25,zorder=2))
     ax.add_patch(plt.Circle((9,9),0.25,color='#2266ff',alpha=0.5,zorder=2))
     ax.plot(9,9,'o',markersize=9,color='#4488ff',markeredgecolor='white',markeredgewidth=0.8,zorder=3)
