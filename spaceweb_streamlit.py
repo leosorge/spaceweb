@@ -169,7 +169,7 @@ def genera_frase_adams():
 def starfleet_msg(testo: str):
     st.session_state.oracolo_txt = testo
 
-def nuova_partita(nome):
+def nuova_partita(nome, bentornato=False):
     pts = {(0,0),(9,9),(9,0)}
     l, q, s = [], [], []
     def get_p():
@@ -190,7 +190,16 @@ def nuova_partita(nome):
     st.session_state.pos_nemica       = [9, 0]
     st.session_state.cnt_mosse        = 0
     st.session_state.cnt_oracolo      = 0
-    st.session_state.msg              = f"Benvenuto {nome}! ⚠️ Attenzione alla nave rossa! Scudo al 50%."
+    # DOPO
+    if bentornato:
+        db   = st.session_state.db
+        mask = db["nome"].str.lower() == nome.lower()
+        punti_precedenti = int(float(db.loc[mask, "ww"].values[0])) if mask.any() else 0
+        st.session_state.w = 100 + punti_precedenti
+        st.session_state.msg = f"Bentornato {nome}! Energia: {st.session_state.w} (100 + {punti_precedenti} precedenti). ⚠️ Scudo al 50%."
+    else:
+        st.session_state.msg = f"Benvenuto {nome}! ⚠️ Attenzione alla nave rossa! Scudo al 50%."
+        
     st.session_state.starfleet_alert  = False
     st.session_state.tempesta_pending = None
     st.session_state.oracolo_txt      = "🌌 In attesa di saggezza cosmica..."
@@ -325,6 +334,14 @@ def esegui_mossa(dx, dy):
     elif ss.pos == [9,9]:
         if len(ss.q) == 0:
             msg += "🏆 VITTORIA! Destinazione raggiunta e premio riconosciuto!"; ss.sound_event = "victory"
+            # salva energia attuale come ww nel database
+            db   = ss.db
+            mask = db["nome"].str.lower() == ss.nome.lower()
+            if mask.any():
+                idx = db.index[mask][0]
+                db.at[idx, "ww"] = int(ss.w)
+                ss.db = db
+                db_salva_utente(db.loc[idx].to_dict())
             ss.schermata = "numerologia"
         else:
             msg += f"✅ Arrivato a (9,9), ma mancano {len(ss.q)} punto/i verde/i per il premio."
@@ -471,7 +488,10 @@ def schermata_login():
                             nuova_row = {"nome":nome.strip(),**{f"data{i}":oggi for i in range(1,8)},**{f"punteggio{i}":0 for i in range(1,8)},"ww":0,"energia":100}
                             st.session_state.db = pd.concat([db, pd.DataFrame([nuova_row])], ignore_index=True)
                             db_salva_utente(nuova_row)
-                        nuova_partita(nome.strip()); st.rerun()
+                            nuova_partita(nome.strip(), bentornato=False)
+                        else:
+                            nuova_partita(nome.strip(), bentornato=True)
+                        st.rerun()
         with colB:
             if st.button("🔐 ADM", key="btn_admin_login"):
                 st.session_state.adm_pwd_step = True; st.rerun()
