@@ -498,12 +498,165 @@ def mostra_testata():
             f'<h1 title="{titolo_hover}" style="margin-top:0.2rem;">🚀 SPACE WEB</h1>',
             unsafe_allow_html=True
         )
+#####
+# mostra_intro_arcade - 18/03/26
+#####
+def mostra_intro_arcade():
+    """Animazione stile arcade anni '80 con typo SPACY -> SPACE WEB + esplosione rosa."""
+    components.html(
+        """
+        <div id="sw-intro-wrap" style="position:relative;width:100%;height:230px;background:#030617;border:1px solid #22334f;border-radius:12px;overflow:hidden;margin:.25rem 0 1rem 0;">
+          <canvas id="sw-intro-canvas" width="1280" height="460" style="width:100%;height:100%;display:block;"></canvas>
+          <button id="sw-audio-btn" style="position:absolute;right:14px;bottom:12px;background:#0f1733;color:#ffd34d;border:1px solid #42598f;padding:6px 10px;border-radius:8px;font-family:monospace;cursor:pointer;">▶ Audio arcade</button>
+        </div>
+        <script>
+        (() => {
+          const canvas = document.getElementById("sw-intro-canvas");
+          const ctx = canvas.getContext("2d");
+          const W = canvas.width, H = canvas.height;
+          const total = 8.5;
+          const start = performance.now();
+
+          const stars = Array.from({length: 180}, () => ({
+            x: Math.random() * W,
+            y: Math.random() * H,
+            r: Math.random() * 2 + 0.5,
+            tw: Math.random() * Math.PI * 2,
+            v: 0.3 + Math.random() * 0.7
+          }));
+          const galaxies = Array.from({length: 14}, () => ({
+            x: Math.random() * W,
+            y: Math.random() * H,
+            r: 14 + Math.random() * 35
+          }));
+
+          function typedText(t) {
+            const seq = [
+              [1.0, "S"], [1.2, "SP"], [1.4, "SPA"], [1.6, "SPAC"], [1.8, "SPACY"],
+              [4.9, "SPACE"], [5.15, "SPACE "], [5.35, "SPACE W"], [5.55, "SPACE WE"], [5.75, "SPACE WEB"]
+            ];
+            let out = "";
+            for (const [ts, tx] of seq) if (t >= ts) out = tx;
+            if (t >= 2.1 && t <= 4.8 && out === "SPACY") {
+              const blink = Math.floor((t - 2.1) * 6) % 2 === 0;
+              out = blink ? "SPAC " : "SPACY";
+            }
+            return out;
+          }
+
+          function draw(now) {
+            const t = ((now - start) / 1000) % total;
+            ctx.fillStyle = "#020510";
+            ctx.fillRect(0, 0, W, H);
+
+            for (const g of galaxies) {
+              const glow = 0.14 + 0.08 * Math.sin(t * 1.6 + g.x * 0.01);
+              const rg = ctx.createRadialGradient(g.x, g.y, 0, g.x, g.y, g.r * 1.8);
+              rg.addColorStop(0, `rgba(145,190,255,${glow})`);
+              rg.addColorStop(0.45, `rgba(156,126,255,${glow * 0.65})`);
+              rg.addColorStop(1, "rgba(0,0,0,0)");
+              ctx.fillStyle = rg;
+              ctx.beginPath();
+              ctx.arc(g.x, g.y, g.r * 1.8, 0, Math.PI * 2);
+              ctx.fill();
+            }
+
+            for (const s of stars) {
+              const a = 0.45 + 0.55 * Math.sin(t * s.v * 5 + s.tw);
+              ctx.fillStyle = `rgba(180,220,255,${a})`;
+              ctx.beginPath();
+              ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+              ctx.fill();
+            }
+
+            const text = typedText(t);
+            ctx.font = "bold 124px 'Arial Black', Impact, sans-serif";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+
+            if (text) {
+              ctx.shadowBlur = 22;
+              ctx.shadowColor = "rgba(255,194,65,0.65)";
+              ctx.lineWidth = 4;
+              ctx.strokeStyle = "#513000";
+              ctx.strokeText(text, W / 2, H / 2);
+              ctx.fillStyle = "#d7ab2d";
+              ctx.fillText(text, W / 2, H / 2);
+              ctx.shadowBlur = 0;
+            }
+
+            if (t > 6.2) {
+              const p = Math.min((t - 6.2) / 1.3, 1);
+              const r = 30 + p * 240;
+              const exp = ctx.createRadialGradient(W * 0.53, H * 0.52, 0, W * 0.53, H * 0.52, r);
+              exp.addColorStop(0, "rgba(255,170,235,0.95)");
+              exp.addColorStop(0.5, "rgba(255,55,180,0.5)");
+              exp.addColorStop(1, "rgba(255,30,160,0)");
+              ctx.fillStyle = exp;
+              ctx.beginPath();
+              ctx.arc(W * 0.53, H * 0.52, r, 0, Math.PI * 2);
+              ctx.fill();
+            }
+
+            requestAnimationFrame(draw);
+          }
+          requestAnimationFrame(draw);
+
+          let audioStarted = false;
+          function startAudio() {
+            if (audioStarted) return;
+            audioStarted = true;
+            const ac = new (window.AudioContext || window.webkitAudioContext)();
+            const master = ac.createGain();
+            master.gain.value = 0.07;
+            master.connect(ac.destination);
+            const bpm = 120;
+            const beat = 60 / bpm;
+            const notes = [261.63, 329.63, 392.0, 523.25, 392.0, 329.63];
+            for (let i = 0; i < 34; i++) {
+              const osc = ac.createOscillator();
+              const gain = ac.createGain();
+              osc.type = i % 2 ? "square" : "sawtooth";
+              osc.frequency.value = notes[i % notes.length] * (i % 8 === 0 ? 0.5 : 1);
+              gain.gain.setValueAtTime(0.0001, ac.currentTime + i * beat / 2);
+              gain.gain.exponentialRampToValueAtTime(0.11, ac.currentTime + i * beat / 2 + 0.01);
+              gain.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + i * beat / 2 + 0.21);
+              osc.connect(gain);
+              gain.connect(master);
+              osc.start(ac.currentTime + i * beat / 2);
+              osc.stop(ac.currentTime + i * beat / 2 + 0.22);
+            }
+            const boom = ac.createOscillator();
+            const boomG = ac.createGain();
+            boom.type = "triangle";
+            boom.frequency.setValueAtTime(180, ac.currentTime + 6.1);
+            boom.frequency.exponentialRampToValueAtTime(55, ac.currentTime + 6.55);
+            boomG.gain.setValueAtTime(0.0001, ac.currentTime + 6.05);
+            boomG.gain.exponentialRampToValueAtTime(0.16, ac.currentTime + 6.13);
+            boomG.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + 6.8);
+            boom.connect(boomG);
+            boomG.connect(master);
+            boom.start(ac.currentTime + 6.05);
+            boom.stop(ac.currentTime + 6.9);
+            document.getElementById("sw-audio-btn").innerText = "♪ Audio attivo";
+            document.getElementById("sw-audio-btn").disabled = true;
+          }
+          document.getElementById("sw-audio-btn").addEventListener("click", startAudio);
+        })();
+        </script>
+        """,
+        height=250,
+    )
 
 # ============================================================
 # SCHERMATA LOGIN
 # ============================================================
 def schermata_login():
-    mostra_testata()
+    #####
+    # mostra_intro_arcade - 18/03/26
+    #####
+    mostra_intro_arcade()
+
     st.markdown('<div class="subtitle">◈ NAVIGAZIONE COSMICA QUANTISTICA ◈</div>',
                 unsafe_allow_html=True)
 
