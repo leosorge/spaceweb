@@ -159,6 +159,8 @@ def init_state():
         st.session_state.quiz_idx         = 0
         st.session_state.quiz_score       = 0
         st.session_state.quiz_msg         = ""
+        # FIX 4: flag suoni eventi
+        st.session_state.sound_event      = ""
 
 init_state()
 
@@ -250,6 +252,7 @@ def nuova_partita(nome):
     st.session_state.nav_y_selected   = False
     st.session_state.starfleet_alert  = False
     st.session_state.tempesta_pending = None
+    st.session_state.sound_event      = ""
     st.session_state.schermata        = "gioco"
 
 def esegui_mossa(dx, dy):
@@ -257,9 +260,11 @@ def esegui_mossa(dx, dy):
     pos = ss.pos
     nx, ny = pos[0]+dx, pos[1]+dy
     msg = ""
+    ss.sound_event = ""
 
     if not (0 <= nx <= 9 and 0 <= ny <= 9):
         msg = "⚠️ Fuori dai bordi galattici!"
+        ss.sound_event = "warn"
     elif (nx, ny) in ss.l:
         danno = 20
         if ss.scudo > 0:
@@ -270,10 +275,12 @@ def esegui_mossa(dx, dy):
         else:
             msg = f"🔴 Ostacolo! -{danno} energia (scudo esaurito)."
         ss.w -= danno
+        ss.sound_event = "danger"
     else:
         costo = dx**2 + dy**2
         if ss.w < costo:
             msg = f"⚡ Energia insufficiente! Serve {costo}, hai {ss.w}."
+            ss.sound_event = "warn"
         else:
             ss.pos = [nx, ny]
             ss.w  -= costo
@@ -284,10 +291,13 @@ def esegui_mossa(dx, dy):
                 ss.scudo = min(100, ss.scudo + bonus_s)
                 ss.q.remove((nx, ny))
                 msg += f"🟢 Bonus! +{bonus_e} energia, +{bonus_s} scudo. "
+                ss.sound_event = "bonus"
             if (nx, ny) in ss.s:
                 ss.w -= 15
                 ss.s.remove((nx, ny))
                 msg += "⚫ Campo stealth! -15 energia. "
+                if not ss.sound_event:
+                    ss.sound_event = "stealth"
 
             # Muovi nemico
             ss.cnt_mosse += 1
@@ -313,6 +323,7 @@ def esegui_mossa(dx, dy):
                 else:
                     msg += f"💥 Catturato! -{danno_nemico} energia (scudo esaurito). "
                 ss.w -= danno_nemico
+                ss.sound_event = "danger"
 
             # ── [STARFLEET: TEMPESTA] Tempesta magnetica a 2 fasi ──────────
             if ss.get("tempesta_pending") is not None:
@@ -333,6 +344,7 @@ def esegui_mossa(dx, dy):
                     else:
                         ss.w = ss.w // 2
                         msg += "💥 Tempesta magnetica colpisce! Energia dimezzata! "
+                    ss.sound_event = "explosion"
                 ss.tempesta_pending = None
 
             elif random.random() < 0.30:
@@ -341,6 +353,7 @@ def esegui_mossa(dx, dy):
                 ss.tempesta_pending = (ex, ey)
                 ss.esplosione = []
                 starfleet_msg(f"⭐ ATTENZIONE! Tempesta magnetica in arrivo su ({ex}, {ey}) ⭐")
+                ss.sound_event = "alert"
 
             else:
                 ss.esplosione = []
@@ -355,12 +368,12 @@ def esegui_mossa(dx, dy):
     ss.cnt_oracolo += 1
 
     if ss.get("tempesta_pending") is not None:
-        # Il messaggio tempesta è già stato impostato — non sovrascrivere
         ss.starfleet_alert = False
     elif 0 < ss.w < 50:
-        # FIX: energia bassa ha priorità su Adams
         starfleet_msg("⚠️ Energia critica! Vai ai Quiz per ricaricare.")
         ss.starfleet_alert = True
+        if not ss.sound_event:
+            ss.sound_event = "warn"
     elif ss.cnt_oracolo % 3 == 0:
         starfleet_msg(genera_frase_adams())
         ss.starfleet_alert = False
@@ -370,15 +383,54 @@ def esegui_mossa(dx, dy):
     if ss.w <= 0:
         ss.w = 0
         msg += "💀 GAME OVER! Energia esaurita."
+        ss.sound_event = "gameover"
     elif ss.pos == [9,9]:
         if len(ss.q) == 0:
             msg += "🏆 VITTORIA! Destinazione raggiunta e premio riconosciuto!"
+            ss.sound_event = "victory"
         else:
             msg += (
                 f"✅ Arrivato a (9,9), ma mancano {len(ss.q)} punto/i verde/i per il premio."
             )
 
     ss.msg = msg
+
+# ============================================================
+# FIX 4: suoni eventi — inietta JS Web Audio con height=0
+# ============================================================
+def play_sound_event(event: str):
+    if not event:
+        return
+    sound_map = {
+        "bonus":     ("sine",     880, 0.18, 0.18),
+        "danger":    ("sawtooth", 180, 0.30, 0.20),
+        "warn":      ("square",   440, 0.15, 0.12),
+        "stealth":   ("sine",     220, 0.25, 0.10),
+        "alert":     ("square",   660, 0.20, 0.15),
+        "explosion": ("sawtooth", 120, 0.45, 0.22),
+        "gameover":  ("sawtooth",  80, 0.60, 0.25),
+        "victory":   ("sine",    1047, 0.50, 0.20),
+    }
+    if event not in sound_map:
+        return
+    wave, freq, dur, vol = sound_map[event]
+    components.html(f"""
+    <script>
+    (function(){{
+      try {{
+        const ac = new (window.AudioContext || window.webkitAudioContext)();
+        const o  = ac.createOscillator();
+        const g  = ac.createGain();
+        o.type = "{wave}";
+        o.frequency.value = {freq};
+        g.gain.setValueAtTime({vol}, ac.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + {dur});
+        o.connect(g); g.connect(ac.destination);
+        o.start(); o.stop(ac.currentTime + {dur});
+      }} catch(e) {{}}
+    }})();
+    </script>
+    """, height=0)
 
 # ============================================================
 # DISEGNA GRIGLIA
@@ -449,7 +501,6 @@ def disegna_griglia():
     ax.scatter(px, py, marker=astronave_path, s=600,
                color='#FFD700', edgecolor='#ff8800', linewidth=1.5, zorder=6)
 
-    # FIX: rimosso 🛡 dal titolo (emoji non supportata da DejaVu Sans Mono)
     ax.set_title(
         f"E:{ss.w}  |  SCUDO:{ss.scudo}%  |  Nemico:{tuple(ss.pos_nemica)}",
         fontsize=8, color='#8899cc', pad=5,
@@ -462,10 +513,11 @@ def disegna_griglia():
                 facecolor='#02040f')
     plt.close(fig)
     buf.seek(0)
-    return buf
+    # FIX 2: restituisce bytes per evitare buf vuoto al secondo rerun
+    return buf.read()
 
 # ============================================================
-# TESTATA
+# TESTATA con immagine q_title.png (admin e quiz)
 # ============================================================
 def mostra_testata():
     titolo_hover = (
@@ -499,6 +551,7 @@ def mostra_testata():
             f'<h1 title="{titolo_hover}" style="margin-top:0.2rem;">🚀 SPACE WEB</h1>',
             unsafe_allow_html=True
         )
+
 #####
 # mostra_intro_arcade - 18/03/26
 #####
@@ -514,14 +567,14 @@ def mostra_intro_arcade():
         </style>
         <div id="sw-intro-wrap" style="position:relative;width:100%;height:230px;background:#030617;border:1px solid #22334f;border-radius:12px;overflow:hidden;margin:.25rem 0 1rem 0;">
           <canvas id="sw-intro-canvas" width="1280" height="460" style="width:100%;height:100%;display:block;"></canvas>
-          <button id="sw-audio-btn" style="position:absolute;right:14px;bottom:12px;background:#0f1733;color:#ffd34d;border:1px solid #42598f;padding:6px 10px;border-radius:8px;font-family:monospace;cursor:pointer;animation:swPulse 1.1s ease-in-out infinite alternate;">🎵 Audio ON</button>
+          <button id="sw-audio-btn" style="position:absolute;right:14px;bottom:12px;background:#0f1733;color:#ffd34d;border:1px solid #42598f;padding:6px 10px;border-radius:8px;font-family:monospace;cursor:pointer;animation:swPulse 1.1s ease-in-out infinite alternate;">▶ Audio arcade</button>
         </div>
         <script>
         (() => {
           const canvas = document.getElementById("sw-intro-canvas");
           const ctx = canvas.getContext("2d");
           const W = canvas.width, H = canvas.height;
-          const total = 8.5;
+          const LOOP = 8.5;
           const start = performance.now();
 
           const stars = Array.from({length: 180}, () => ({
@@ -552,7 +605,7 @@ def mostra_intro_arcade():
           }
 
           function draw(now) {
-            const t = ((now - start) / 1000) % total;
+            const t = ((now - start) / 1000) % LOOP;
             ctx.fillStyle = "#020510";
             ctx.fillRect(0, 0, W, H);
 
@@ -609,83 +662,64 @@ def mostra_intro_arcade():
           }
           requestAnimationFrame(draw);
 
-          let audioCtx = null;
-          let master = null;
-          let seqTimer = null;
-          let playing = false;
+          // FIX 3: loop audio corretto con scheduleAhead
+          let ac = null, master = null, playing = false, loopId = null;
 
-          function playSequence(ac, out) {
-            const bpm = 120;
-            const beat = 60 / bpm;
+          function scheduleSequence(offset) {
+            const bpm = 120, beat = 60 / bpm;
             const notes = [261.63, 329.63, 392.0, 523.25, 392.0, 329.63];
             for (let i = 0; i < 34; i++) {
               const osc = ac.createOscillator();
               const gain = ac.createGain();
               osc.type = i % 2 ? "square" : "sawtooth";
               osc.frequency.value = notes[i % notes.length] * (i % 8 === 0 ? 0.5 : 1);
-              gain.gain.setValueAtTime(0.0001, ac.currentTime + i * beat / 2);
-              gain.gain.exponentialRampToValueAtTime(0.14, ac.currentTime + i * beat / 2 + 0.01);
-              gain.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + i * beat / 2 + 0.21);
-              osc.connect(gain);
-              gain.connect(out);
-              osc.start(ac.currentTime + i * beat / 2);
-              osc.stop(ac.currentTime + i * beat / 2 + 0.22);
+              const t0 = offset + i * beat / 2;
+              gain.gain.setValueAtTime(0.0001, t0);
+              gain.gain.exponentialRampToValueAtTime(0.14, t0 + 0.01);
+              gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.21);
+              osc.connect(gain); gain.connect(master);
+              osc.start(t0); osc.stop(t0 + 0.22);
             }
             const boom = ac.createOscillator();
             const boomG = ac.createGain();
             boom.type = "triangle";
-            boom.frequency.setValueAtTime(180, ac.currentTime + 6.1);
-            boom.frequency.exponentialRampToValueAtTime(55, ac.currentTime + 6.55);
-            boomG.gain.setValueAtTime(0.0001, ac.currentTime + 6.05);
-            boomG.gain.exponentialRampToValueAtTime(0.18, ac.currentTime + 6.13);
-            boomG.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + 6.8);
-            boom.connect(boomG);
-            boomG.connect(out);
-            boom.start(ac.currentTime + 6.05);
-            boom.stop(ac.currentTime + 6.9);
+            boom.frequency.setValueAtTime(180, offset + 6.1);
+            boom.frequency.exponentialRampToValueAtTime(55, offset + 6.55);
+            boomG.gain.setValueAtTime(0.0001, offset + 6.05);
+            boomG.gain.exponentialRampToValueAtTime(0.18, offset + 6.13);
+            boomG.gain.exponentialRampToValueAtTime(0.0001, offset + 6.8);
+            boom.connect(boomG); boomG.connect(master);
+            boom.start(offset + 6.05); boom.stop(offset + 6.9);
           }
 
           function startAudio() {
             if (playing) return;
-            if (!audioCtx) {
-              audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-              master = audioCtx.createGain();
-              master.gain.value = 0.12;
-              master.connect(audioCtx.destination);
-            }
+            ac = new (window.AudioContext || window.webkitAudioContext)();
+            master = ac.createGain(); master.gain.value = 0.12; master.connect(ac.destination);
             playing = true;
-            playSequence(audioCtx, master);
-            seqTimer = setInterval(() => {
-              if (playing) playSequence(audioCtx, master);
-            }, total * 1000);
-            const btn = document.getElementById("sw-audio-btn");
-            btn.innerText = "🔊 Audio ON";
-            btn.disabled = false;
+            scheduleSequence(ac.currentTime);
+            loopId = setInterval(() => { if (playing) scheduleSequence(ac.currentTime); }, LOOP * 1000);
+            document.getElementById("sw-audio-btn").innerText = "🔊 Audio ON";
           }
 
           function stopAudio() {
             playing = false;
-            if (seqTimer) clearInterval(seqTimer);
-            seqTimer = null;
-            const btn = document.getElementById("sw-audio-btn");
-            btn.innerText = "▶ Audio arcade";
-            btn.disabled = false;
+            if (loopId) { clearInterval(loopId); loopId = null; }
+            if (ac) { ac.close(); ac = null; master = null; }
+            document.getElementById("sw-audio-btn").innerText = "▶ Audio arcade";
           }
 
-          function toggleAudio() {
-            if (playing) stopAudio();
-            else startAudio();
-          }
+          document.getElementById("sw-audio-btn").addEventListener("click", () => {
+            if (playing) stopAudio(); else startAudio();
+          });
 
           function autoEnableOnce() {
             if (!playing) startAudio();
             window.removeEventListener("pointerdown", autoEnableOnce);
             window.removeEventListener("keydown", autoEnableOnce);
           }
-
           window.addEventListener("pointerdown", autoEnableOnce);
           window.addEventListener("keydown", autoEnableOnce);
-          document.getElementById("sw-audio-btn").addEventListener("click", toggleAudio);
         })();
         </script>
         """,
@@ -693,7 +727,7 @@ def mostra_intro_arcade():
     )
 
 #####
-# mostra_testata_finale_arcade - 18/03/26
+# mostra_testata_finale_arcade - 18/03/26  (FIX 5: usata in gioco)
 #####
 def mostra_testata_finale_arcade():
     """Ultimo frame dell'animazione usato come testata statica nel tabellone di gioco."""
@@ -714,13 +748,11 @@ def mostra_testata_finale_arcade():
         html.format(title_hover=title_hover),
         unsafe_allow_html=True,
     )
+
 # ============================================================
 # SCHERMATA LOGIN
 # ============================================================
 def schermata_login():
-    #####
-    # mostra_intro_arcade - 18/03/26
-    #####
     mostra_intro_arcade()
 
     st.markdown('<div class="subtitle">◈ NAVIGAZIONE COSMICA QUANTISTICA ◈</div>',
@@ -765,7 +797,7 @@ def schermata_login():
 # SCHERMATA ADMIN
 # ============================================================
 def schermata_admin():
-    mostra_testata()
+    mostra_testata_finale_arcade()  # FIX 5
     st.markdown("### 🔐 PANNELLO AMMINISTRATORE")
 
     st.dataframe(st.session_state.db, width="stretch")
@@ -794,7 +826,7 @@ def schermata_admin():
 # ============================================================
 def schermata_quiz():
     ss = st.session_state
-    mostra_testata()
+    mostra_testata_finale_arcade()  # FIX 5
     st.markdown('<div class="quiz-title">🎓 QUIZ COSMICO</div>', unsafe_allow_html=True)
 
     if ss.quiz_tipo is None:
@@ -878,6 +910,9 @@ def schermata_quiz():
 
     st.markdown('</div>', unsafe_allow_html=True)
 
+# ============================================================
+# SCHERMATA GIOCO
+# ============================================================
 def schermata_gioco():
     ss = st.session_state
 
@@ -892,13 +927,18 @@ def schermata_gioco():
 
     mostra_testata_finale_arcade()
 
+    # FIX 4: suona l'evento e consuma il flag
+    play_sound_event(ss.get("sound_event", ""))
+    ss.sound_event = ""
+
     # Layout principale: Mappa | Ship Status+EventLog+Nav+Sistemi | Legenda
     col_mappa, col_status, col_legenda = st.columns([3, 2, 1])
 
     with col_mappa:
         st.markdown('<div class="section-title">🌌 GALAXY VIEW</div>', unsafe_allow_html=True)
-        buf = disegna_griglia()
-        st.image(buf.read(), width="stretch")
+        # FIX 1+2: disegna_griglia restituisce bytes freschi ad ogni rerun
+        img_bytes = disegna_griglia()
+        st.image(img_bytes, width="stretch")
 
     with col_status:
         st.markdown('<div class="section-title">🚀 SHIP STATUS</div>', unsafe_allow_html=True)
@@ -992,6 +1032,7 @@ def schermata_gioco():
                     ss.nav_y_selected = True
                     y_pressed = True
 
+        # FIX 1: mossa solo quando entrambi i valori sono presenti
         if (x_pressed or y_pressed) and ss.nav_x_selected and ss.nav_y_selected:
             dx = ss.nav_target_x
             dy = ss.nav_target_y
