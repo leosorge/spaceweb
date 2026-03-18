@@ -22,8 +22,9 @@ from supabase import create_client, Client
 from portafoglio import Portafoglio
 
 MISSIONE_TESTO = (
-    "Missione: andare da 0,0 a 9,9 affrontando nemico, mine, tempeste e quiz, "
-    "passando per i 3 punti verdi iniziali per ottenere il riconoscimento del premio."
+    "Missione: andare da 0,0 a 9,9 affrontando nemico,"
+    "mine, tempeste e quiz, passando per i 3 punti verdi" 
+    "per ottenere il riconoscimento del premio."
 )
 
 # ============================================================
