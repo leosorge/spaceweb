@@ -1,0 +1,78 @@
+openapi: 3.0.3
+info:
+  title: MA YI Minimal API
+  version: 1.0.0
+  description: API minima per integrazione con il modulo Antropometrica Inversa di SpaceWeb.
+servers:
+  - url: https://example.com
+paths:
+  /mayi/analyze:
+    post:
+      summary: Analizza input MA YI
+      operationId: analyzeMayi
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MayiRequest'
+      responses:
+        '200':
+          description: Analisi completata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MayiResponse'
+        '400':
+          description: Payload non valido
+        '401':
+          description: Token non valido/assente
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    MayiRequest:
+      type: object
+      required: [mode, eta]
+      properties:
+        mode:
+          type: string
+          enum: [single, multi]
+        eta:
+          type: integer
+          minimum: 1
+          maximum: 120
+        input_text:
+          type: string
+          description: Testo singolo o contenuto file.
+        input_filename:
+          type: string
+          description: Nome file, utile in modalità multi.
+        local_output:
+          type: string
+          description: Output locale generato da SpaceWeb (opzionale).
+    MayiResponse:
+      type: object
+      required: [status, dominante, confidence]
+      properties:
+        status:
+          type: string
+          example: ok
+        dominante:
+          type: string
+          enum: [Metallo, Legno, Terra, Fuoco, Acqua]
+        confidence:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+        notes:
+          type: string
+        debug:
+          type: object
+          additionalProperties: true

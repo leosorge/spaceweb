@@ -4,6 +4,7 @@
 # ============================================================
 
 import streamlit as st
+import streamlit.components.v1 as components
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from matplotlib.path import Path
@@ -19,10 +20,12 @@ import io
 import os
 from supabase import create_client, Client
 from portafoglio import Portafoglio
+from antropometrica_inversa import schermata_antropometrica_inversa
 
 MISSIONE_TESTO = (
-    "Missione: andare da 0,0 a 9,9 affrontando nemico, mine, tempeste e quiz, "
-    "passando per i 3 punti verdi iniziali per ottenere il riconoscimento del premio."
+    "Missione: andare da 0,0 a 9,9 affrontando nemico,\n"
+    "mine, tempeste e quiz, passando per i 3 punti verdi\n"
+    "per ottenere il riconoscimento del premio."
 )
 
 # ============================================================
@@ -149,7 +152,11 @@ def init_state():
         st.session_state.cnt_mosse        = 0
         st.session_state.cnt_oracolo      = 0
         st.session_state.msg              = ""
+        st.session_state.last_event_log_msg = ""
         st.session_state.oracolo_txt      = "🌌 In attesa di saggezza cosmica..."
+        st.session_state.sfx_nonce        = 0
+        st.session_state.sfx_rendered     = 0
+        st.session_state.sfx_kind         = ""
         st.session_state.tempesta_pending = None
         st.session_state.starfleet_alert  = False
         st.session_state.db               = db_carica()
@@ -217,6 +224,86 @@ def genera_frase_adams():
 def starfleet_msg(testo: str):
     """Invia un messaggio nella finestra Starfleet Communications."""
     st.session_state.oracolo_txt = testo
+    queue_sfx("comm_beep")
+
+def queue_sfx(kind: str):
+    st.session_state.sfx_kind = kind
+    st.session_state.sfx_nonce = st.session_state.get("sfx_nonce", 0) + 1
+
+def render_sfx(kind: str):
+    """Riproduce effetti audio client-side per eventi di gioco."""
+    safe_kind = str(kind).replace("\\", "").replace('"', "")
+    js = """
+        <script>
+        (() => {
+          const Ctx = window.AudioContext || window.webkitAudioContext;
+          if (!Ctx) return;
+          const ac = new Ctx();
+          const kind = "__KIND__";
+
+          function blip(freqA, freqB, dur=0.2, typeA="square", typeB="triangle", gainMax=0.12) {
+            const g = ac.createGain();
+            const o1 = ac.createOscillator();
+            const o2 = ac.createOscillator();
+            o1.type = typeA; o2.type = typeB;
+            o1.frequency.setValueAtTime(freqA, ac.currentTime);
+            o2.frequency.setValueAtTime(freqB, ac.currentTime);
+            g.gain.setValueAtTime(0.0001, ac.currentTime);
+            g.gain.exponentialRampToValueAtTime(gainMax, ac.currentTime + 0.015);
+            g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + dur);
+            o1.connect(g); o2.connect(g); g.connect(ac.destination);
+            o1.start(ac.currentTime); o2.start(ac.currentTime + 0.02);
+            o1.stop(ac.currentTime + dur - 0.04); o2.stop(ac.currentTime + dur);
+          }
+
+          if (kind === "comm_beep") {
+            blip(1046.5, 1318.5, 0.2, "square", "triangle", 0.12);
+          } else if (kind === "stealth_down") {
+            const o = ac.createOscillator();
+            const g = ac.createGain();
+            o.type = "sawtooth";
+            o.frequency.setValueAtTime(950, ac.currentTime);
+            o.frequency.exponentialRampToValueAtTime(280, ac.currentTime + 0.35);
+            g.gain.setValueAtTime(0.0001, ac.currentTime);
+            g.gain.exponentialRampToValueAtTime(0.14, ac.currentTime + 0.02);
+            g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + 0.36);
+            o.connect(g); g.connect(ac.destination);
+            o.start(ac.currentTime); o.stop(ac.currentTime + 0.37);
+          } else if (kind === "bonus_up") {
+            const o = ac.createOscillator();
+            const g = ac.createGain();
+            o.type = "triangle";
+            o.frequency.setValueAtTime(280, ac.currentTime);
+            o.frequency.exponentialRampToValueAtTime(950, ac.currentTime + 0.35);
+            g.gain.setValueAtTime(0.0001, ac.currentTime);
+            g.gain.exponentialRampToValueAtTime(0.14, ac.currentTime + 0.02);
+            g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + 0.36);
+            o.connect(g); g.connect(ac.destination);
+            o.start(ac.currentTime); o.stop(ac.currentTime + 0.37);
+          } else if (kind === "storm_crackle") {
+            const bufferSize = ac.sampleRate * 0.3;
+            const buffer = ac.createBuffer(1, bufferSize, ac.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
+            const src = ac.createBufferSource();
+            const filter = ac.createBiquadFilter();
+            const g = ac.createGain();
+            src.buffer = buffer;
+            filter.type = "highpass";
+            filter.frequency.value = 850;
+            g.gain.setValueAtTime(0.0001, ac.currentTime);
+            g.gain.exponentialRampToValueAtTime(0.18, ac.currentTime + 0.02);
+            g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + 0.3);
+            src.connect(filter); filter.connect(g); g.connect(ac.destination);
+            src.start(ac.currentTime); src.stop(ac.currentTime + 0.31);
+          }
+        })();
+        </script>
+        """
+    components.html(
+        js.replace("__KIND__", safe_kind),
+        height=0,
+    )
 
 def nuova_partita(nome):
     pts = {(0,0),(9,9),(9,0)}
@@ -242,6 +329,7 @@ def nuova_partita(nome):
     st.session_state.msg              = (
         f"Benvenuto {nome}! ⚠️ Attenzione alla nave rossa! Scudo al 50%."
     )
+    st.session_state.last_event_log_msg = ""
     st.session_state.nav_target_x     = 0
     st.session_state.nav_target_y     = 0
     st.session_state.nav_x_selected   = False
@@ -281,10 +369,12 @@ def esegui_mossa(dx, dy):
                 ss.w    += bonus_e
                 ss.scudo = min(100, ss.scudo + bonus_s)
                 ss.q.remove((nx, ny))
+                queue_sfx("bonus_up")
                 msg += f"🟢 Bonus! +{bonus_e} energia, +{bonus_s} scudo. "
             if (nx, ny) in ss.s:
                 ss.w -= 15
                 ss.s.remove((nx, ny))
+                queue_sfx("stealth_down")
                 msg += "⚫ Campo stealth! -15 energia. "
 
             # Muovi nemico
@@ -322,6 +412,7 @@ def esegui_mossa(dx, dy):
                 else:
                     ss.esplosione = [(ex,ey),(ex-1,ey),(ex+1,ey),(ex,ey-1),(ex,ey+1)]
                     ss.esplosione = [(x,y) for x,y in ss.esplosione if 0<=x<=9 and 0<=y<=9]
+                queue_sfx("storm_crackle")
                 if tuple(ss.pos) in ss.esplosione:
                     if ss.scudo > 0:
                         assorbito = min(ss.scudo, ss.w // 4)
@@ -338,6 +429,7 @@ def esegui_mossa(dx, dy):
                 ex, ey = random.randint(0,9), random.randint(0,9)
                 ss.tempesta_pending = (ex, ey)
                 ss.esplosione = []
+                queue_sfx("storm_crackle")
                 starfleet_msg(f"⭐ ATTENZIONE! Tempesta magnetica in arrivo su ({ex}, {ey}) ⭐")
 
             else:
@@ -394,7 +486,7 @@ def disegna_griglia():
     ax.tick_params(colors='#334466', labelsize=8)
     ax.grid(True, linestyle='-', linewidth=1, alpha=0.4, color='#1a2a44')
 
-    bg_path = "p_background.png"
+    bg_path = os.path.join(os.path.dirname(__file__), "p_background.png")
     if os.path.exists(bg_path):
         import matplotlib.image as mpimg
         img = mpimg.imread(bg_path)
@@ -498,11 +590,241 @@ def mostra_testata():
             unsafe_allow_html=True
         )
 
+def mostra_intro_arcade():
+    """Animazione stile arcade anni '80 con typo SPACY -> SPACE WEB + esplosione rosa."""
+    components.html(
+        """
+        <style>
+          @keyframes swPulse {
+            0%   { box-shadow: 0 0 0 rgba(255,211,77,0.00), 0 0 0 rgba(255,120,220,0.00); }
+            100% { box-shadow: 0 0 10px rgba(255,211,77,0.70), 0 0 18px rgba(255,120,220,0.45); }
+          }
+        </style>
+        <div id="sw-intro-wrap" style="position:relative;width:100%;height:230px;background:#030617;border:1px solid #22334f;border-radius:12px;overflow:hidden;margin:.25rem 0 1rem 0;">
+          <canvas id="sw-intro-canvas" width="1280" height="460" style="width:100%;height:100%;display:block;"></canvas>
+          <button id="sw-audio-btn" style="position:absolute;right:14px;bottom:12px;background:#0f1733;color:#ffd34d;border:1px solid #42598f;padding:6px 10px;border-radius:8px;font-family:monospace;cursor:pointer;animation:swPulse 1.1s ease-in-out infinite alternate;">🎵 Audio ON</button>
+        </div>
+        <script>
+        (() => {
+          const canvas = document.getElementById("sw-intro-canvas");
+          const ctx = canvas.getContext("2d");
+          const W = canvas.width, H = canvas.height;
+          const total = 8.5;
+          const start = performance.now();
+
+          const stars = Array.from({length: 180}, () => ({
+            x: Math.random() * W,
+            y: Math.random() * H,
+            r: Math.random() * 2 + 0.5,
+            tw: Math.random() * Math.PI * 2,
+            v: 0.3 + Math.random() * 0.7
+          }));
+          const galaxies = Array.from({length: 14}, () => ({
+            x: Math.random() * W,
+            y: Math.random() * H,
+            r: 14 + Math.random() * 35
+          }));
+
+          function typedText(t) {
+            const seq = [
+              [1.0, "S"], [1.2, "SP"], [1.4, "SPA"], [1.6, "SPAC"], [1.8, "SPACY"],
+              [4.9, "SPACE"], [5.15, "SPACE "], [5.35, "SPACE W"], [5.55, "SPACE WE"], [5.75, "SPACE WEB"]
+            ];
+            let out = "";
+            for (const [ts, tx] of seq) if (t >= ts) out = tx;
+            if (t >= 2.1 && t <= 4.8 && out === "SPACY") {
+              const blink = Math.floor((t - 2.1) * 6) % 2 === 0;
+              out = blink ? "SPAC " : "SPACY";
+            }
+            return out;
+          }
+
+          function draw(now) {
+            const t = ((now - start) / 1000) % total;
+            ctx.fillStyle = "#020510";
+            ctx.fillRect(0, 0, W, H);
+
+            for (const g of galaxies) {
+              const glow = 0.14 + 0.08 * Math.sin(t * 1.6 + g.x * 0.01);
+              const rg = ctx.createRadialGradient(g.x, g.y, 0, g.x, g.y, g.r * 1.8);
+              rg.addColorStop(0, `rgba(145,190,255,${glow})`);
+              rg.addColorStop(0.45, `rgba(156,126,255,${glow * 0.65})`);
+              rg.addColorStop(1, "rgba(0,0,0,0)");
+              ctx.fillStyle = rg;
+              ctx.beginPath();
+              ctx.arc(g.x, g.y, g.r * 1.8, 0, Math.PI * 2);
+              ctx.fill();
+            }
+
+            for (const s of stars) {
+              const a = 0.45 + 0.55 * Math.sin(t * s.v * 5 + s.tw);
+              ctx.fillStyle = `rgba(180,220,255,${a})`;
+              ctx.beginPath();
+              ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+              ctx.fill();
+            }
+
+            const text = typedText(t);
+            ctx.font = "bold 124px 'Arial Black', Impact, sans-serif";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+
+            if (text) {
+              ctx.shadowBlur = 22;
+              ctx.shadowColor = "rgba(255,194,65,0.65)";
+              ctx.lineWidth = 4;
+              ctx.strokeStyle = "#513000";
+              ctx.strokeText(text, W / 2, H / 2);
+              ctx.fillStyle = "#d7ab2d";
+              ctx.fillText(text, W / 2, H / 2);
+              ctx.shadowBlur = 0;
+            }
+
+            if (t > 6.2) {
+              const p = Math.min((t - 6.2) / 1.3, 1);
+              const r = 30 + p * 240;
+              const exp = ctx.createRadialGradient(W * 0.53, H * 0.52, 0, W * 0.53, H * 0.52, r);
+              exp.addColorStop(0, "rgba(255,170,235,0.95)");
+              exp.addColorStop(0.5, "rgba(255,55,180,0.5)");
+              exp.addColorStop(1, "rgba(255,30,160,0)");
+              ctx.fillStyle = exp;
+              ctx.beginPath();
+              ctx.arc(W * 0.53, H * 0.52, r, 0, Math.PI * 2);
+              ctx.fill();
+            }
+
+            requestAnimationFrame(draw);
+          }
+          requestAnimationFrame(draw);
+
+          let audioCtx = null;
+          let master = null;
+          let seqTimer = null;
+          let playing = false;
+
+          function loopSequence() {
+            if (!playing || !audioCtx || !master) return;
+            playSequence(audioCtx, master);
+            seqTimer = setTimeout(loopSequence, total * 1000);
+          }
+
+          function playSequence(ac, out) {
+            const bpm = 120;
+            const beat = 60 / bpm;
+            const notes = [261.63, 329.63, 392.0, 523.25, 392.0, 329.63];
+            for (let i = 0; i < 34; i++) {
+              const osc = ac.createOscillator();
+              const gain = ac.createGain();
+              osc.type = i % 2 ? "square" : "sawtooth";
+              osc.frequency.value = notes[i % notes.length] * (i % 8 === 0 ? 0.5 : 1);
+              gain.gain.setValueAtTime(0.0001, ac.currentTime + i * beat / 2);
+              gain.gain.exponentialRampToValueAtTime(0.14, ac.currentTime + i * beat / 2 + 0.01);
+              gain.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + i * beat / 2 + 0.21);
+              osc.connect(gain);
+              gain.connect(out);
+              osc.start(ac.currentTime + i * beat / 2);
+              osc.stop(ac.currentTime + i * beat / 2 + 0.22);
+            }
+            const boom = ac.createOscillator();
+            const boomG = ac.createGain();
+            boom.type = "triangle";
+            boom.frequency.setValueAtTime(180, ac.currentTime + 6.1);
+            boom.frequency.exponentialRampToValueAtTime(55, ac.currentTime + 6.55);
+            boomG.gain.setValueAtTime(0.0001, ac.currentTime + 6.05);
+            boomG.gain.exponentialRampToValueAtTime(0.18, ac.currentTime + 6.13);
+            boomG.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + 6.8);
+            boom.connect(boomG);
+            boomG.connect(out);
+            boom.start(ac.currentTime + 6.05);
+            boom.stop(ac.currentTime + 6.9);
+          }
+
+          function playConfirmBeep(ac, out) {
+            const osc = ac.createOscillator();
+            const gain = ac.createGain();
+            osc.type = "square";
+            osc.frequency.value = 880;
+            gain.gain.setValueAtTime(0.0001, ac.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.2, ac.currentTime + 0.01);
+            gain.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + 0.2);
+            osc.connect(gain);
+            gain.connect(out);
+            osc.start(ac.currentTime);
+            osc.stop(ac.currentTime + 0.21);
+          }
+
+          async function startAudio() {
+            if (playing) return;
+            if (!audioCtx) {
+              audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+              master = audioCtx.createGain();
+              master.gain.value = 0.2;
+              master.connect(audioCtx.destination);
+            }
+            if (audioCtx.state === "suspended") {
+              await audioCtx.resume();
+            }
+            playConfirmBeep(audioCtx, master);
+            playing = true;
+            if (seqTimer) clearTimeout(seqTimer);
+            loopSequence();
+            const btn = document.getElementById("sw-audio-btn");
+            btn.innerText = "🔇 Audio OFF";
+            btn.disabled = false;
+          }
+
+          function stopAudio() {
+            playing = false;
+            if (seqTimer) clearTimeout(seqTimer);
+            seqTimer = null;
+            const btn = document.getElementById("sw-audio-btn");
+            btn.innerText = "🎵 Audio ON";
+            btn.disabled = false;
+          }
+
+          async function toggleAudio() {
+            if (playing) stopAudio();
+            else await startAudio();
+          }
+
+          document.getElementById("sw-audio-btn").addEventListener("click", toggleAudio);
+        })();
+        </script>
+        """,
+        height=250,
+    )
+
+def mostra_testata_finale_arcade():
+    """Ultimo frame dell'animazione usato come testata statica nel tabellone di gioco."""
+    missione_hover_html = MISSIONE_TESTO.replace("\n", "<br>")
+    html = """
+        <div class="sw-final-header" style="position:relative;width:100%;height:118px;background:#020510;border:1px solid #22334f;border-radius:12px;overflow:hidden;margin:.25rem 0 .75rem 0;">
+          <div class="sw-mission-tip" style="position:absolute;left:50%;top:6px;transform:translateX(-50%);background:rgba(5,10,25,0.95);color:#d7e5ff;border:1px solid #3a4f7e;border-radius:8px;padding:8px 10px;font-size:12px;line-height:1.35;text-align:center;white-space:normal;opacity:0;pointer-events:none;transition:opacity .2s ease;z-index:15;width:min(94%,680px);">
+            {missione_hover_html}
+          </div>
+          <div style="position:absolute;inset:0;background:
+            radial-gradient(circle at 54% 54%, rgba(255,170,235,0.95) 0%, rgba(255,55,180,0.45) 20%, rgba(255,30,160,0) 46%),
+            radial-gradient(circle at 18% 32%, rgba(145,190,255,0.18) 0%, rgba(0,0,0,0) 42%),
+            radial-gradient(circle at 76% 68%, rgba(156,126,255,0.15) 0%, rgba(0,0,0,0) 44%);
+          "></div>
+          <div style="position:absolute;left:50%;top:52%;transform:translate(-50%,-50%);font:900 56px 'Arial Black', Impact, sans-serif;color:#d7ab2d;letter-spacing:2px;text-shadow:0 0 18px rgba(255,194,65,.65), 2px 2px 0 #513000;">
+            SPACE WEB
+          </div>
+          <style>
+            .sw-final-header:hover .sw-mission-tip { opacity: 1; }
+          </style>
+        </div>
+        """
+    st.markdown(
+        html.format(missione_hover_html=missione_hover_html),
+        unsafe_allow_html=True,
+    )
+
 # ============================================================
 # SCHERMATA LOGIN
 # ============================================================
 def schermata_login():
-    mostra_testata()
+    mostra_intro_arcade()
     st.markdown('<div class="subtitle">◈ NAVIGAZIONE COSMICA QUANTISTICA ◈</div>',
                 unsafe_allow_html=True)
 
@@ -545,14 +867,14 @@ def schermata_login():
 # SCHERMATA ADMIN
 # ============================================================
 def schermata_admin():
-    mostra_testata()
+    mostra_testata_finale_arcade()
     st.markdown("### 🔐 PANNELLO AMMINISTRATORE")
 
     st.dataframe(st.session_state.db, width="stretch")
 
     st.markdown("---")
 
-    col_admin1, col_admin2 = st.columns(2)
+    col_admin1, col_admin2, col_admin3 = st.columns(3)
 
     with col_admin1:
         if st.session_state.nome:
@@ -568,13 +890,23 @@ def schermata_admin():
         if st.button("📂 Visualizza Portafoglio", type="primary", width="stretch"):
             st.session_state.schermata = "portafoglio"
             st.rerun()
+    with col_admin3:
+        if st.button("🧬 Antropometrica Inversa", width="stretch"):
+            st.session_state.schermata = "antropometrica_inversa"
+            st.rerun()
+
+    # Pulsante dedicato (fallback visibile) per ambienti con layout colonne compresso
+    st.markdown("")
+    if st.button("🧬 Apri modulo MA YI (Antropometrica Inversa)", type="primary", width="stretch"):
+        st.session_state.schermata = "antropometrica_inversa"
+        st.rerun()
 
 # ============================================================
 # SCHERMATA QUIZ  (7 quiz, griglia 3+2+2)
 # ============================================================
 def schermata_quiz():
     ss = st.session_state
-    mostra_testata()
+    mostra_testata_finale_arcade()
     st.markdown('<div class="quiz-title">🎓 QUIZ COSMICO</div>', unsafe_allow_html=True)
 
     if ss.quiz_tipo is None:
@@ -673,9 +1005,9 @@ def schermata_gioco():
     if "nav_y_selected" not in ss:
         ss.nav_y_selected = False
 
-    mostra_testata()
+    mostra_testata_finale_arcade()
 
-    # ── UNICA RIGA: Mappa | Ship Status+EventLog+Nav+Sistemi | Legenda ──
+    # Layout principale: Mappa | Ship Status+EventLog+Nav+Sistemi | Legenda
     col_mappa, col_status, col_legenda = st.columns([3, 2, 1])
 
     with col_mappa:
@@ -736,10 +1068,16 @@ def schermata_gioco():
             msg_class = ("danger"  if any(x in ss.msg for x in ["💀","❌","💥","⚠️"])
                     else "success" if any(x in ss.msg for x in ["🏆","🟢","✅"])
                     else "")
+            if ss.msg != ss.get("last_event_log_msg", ""):
+                queue_sfx("comm_beep")
+                ss.last_event_log_msg = ss.msg
         st.markdown(f'<div class="msg-box {msg_class}" style="font-size:1rem;">{ss.msg}</div>',
                     unsafe_allow_html=True)
         st.markdown('<div class="oracolo-title" style="font-size:1rem;">🌌 COMUNICAZIONI DA STARFLEET</div>',
                     unsafe_allow_html=True)
+        if ss.get("sfx_nonce", 0) > ss.get("sfx_rendered", 0):
+            render_sfx(ss.get("sfx_kind", "comm_beep"))
+            ss.sfx_rendered = ss.get("sfx_nonce", 0)
         alert_class = "alert" if ss.get("starfleet_alert", False) else ""
         st.markdown(f'<div class="oracolo-box {alert_class}" style="font-size:1rem;">{ss.oracolo_txt}</div>',
                     unsafe_allow_html=True)
@@ -835,3 +1173,6 @@ elif schermata_attuale == "gioco":
     schermata_gioco()
 elif schermata_attuale == "portafoglio":
     Portafoglio()
+elif schermata_attuale == "antropometrica_inversa":
+    mostra_testata_finale_arcade()
+    schermata_antropometrica_inversa()
