@@ -117,16 +117,26 @@ def Numerologia():
     st.markdown("---")
 
     # ── Modalità batch da lista.txt ──────────────────────────────────────
-    if st.button("📋 Elabora lista da file", key="btn_batch_num"):
-        ss.num_batch_mode = not ss.get("num_batch_mode", False)
+    if "num_batch_mode" not in ss:
+        ss.num_batch_mode = False
 
-    if ss.get("num_batch_mode", False):
+    col_b1, col_b2 = st.columns([1, 3])
+    with col_b1:
+        if st.button("📋 Elabora lista da file", key="btn_batch_num", width="stretch"):
+            ss.num_batch_mode = True
+            st.rerun()
+    with col_b2:
+        if ss.num_batch_mode:
+            if st.button("✖ Chiudi modalità batch", key="btn_batch_close", width="stretch"):
+                ss.num_batch_mode = False
+                st.rerun()
+
+    if ss.num_batch_mode:
         st.markdown("#### 📂 Elaborazione batch da `lista.txt`")
         st.caption(
             "Formato atteso: prima riga = nome del file di output. "
             "Righe successive: `Nome Cognome;GG/MM/AAAA`"
         )
-
         uploaded = st.file_uploader("Carica lista.txt", type=["txt"], key="num_lista_upload")
 
         if uploaded is not None:
