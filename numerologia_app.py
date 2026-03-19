@@ -3,7 +3,7 @@ import streamlit as st
 from datetime import datetime
 from letters_numerology import consonant_number, vowel_number, name_total_number
 from numbers_numerology import life_path_number
-from numerologia_testi import arr_vocs, arr_cons, arr_tots, arr_data, arr_comb
+from numerology_texts import arr_vocs, arr_cons, arr_tots, arr_data, arr_comb
 
 def Numerologia():
     ss = st.session_state
