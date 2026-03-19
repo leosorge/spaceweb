@@ -18,6 +18,7 @@ import os
 from supabase import create_client, Client
 from portafoglio import Portafoglio
 from suoni import play_sound_event
+from numerologia_app import Numerologia
 
 # 18/03/26 21:43
 from letters_numerology import name_total_number
@@ -516,15 +517,21 @@ def schermata_admin():
     st.markdown("### 🔐 PANNELLO AMMINISTRATORE")
     st.dataframe(st.session_state.db, width="stretch")
     st.markdown("---")
-    col_admin1, col_admin2 = st.columns(2)
+    col_admin1, col_admin2, col_admin3 = st.columns(3)
     with col_admin1:
         if st.session_state.nome:
-            if st.button("← Torna al gioco", width="stretch"): st.session_state.schermata="gioco"; st.rerun()
+            if st.button("← Torna al gioco", width="stretch"):
+                st.session_state.schermata = "gioco"; st.rerun()
         else:
-            if st.button("← Torna al Login", width="stretch"): st.session_state.schermata="login"; st.rerun()
+            if st.button("← Torna al Login", width="stretch"):
+                st.session_state.schermata = "login"; st.rerun()
     with col_admin2:
-        if st.button("📂 Visualizza Portafoglio", type="primary", width="stretch"): st.session_state.schermata="portafoglio"; st.rerun()
-
+        if st.button("📂 Portafoglio", type="primary", width="stretch"):
+            st.session_state.schermata = "portafoglio"; st.rerun()
+    with col_admin3:
+        if st.button("🔢 Numerologia", type="primary", width="stretch"):
+            st.session_state.schermata = "numerologia_app"; st.rerun()
+            
 def schermata_quiz():
     ss = st.session_state
     mostra_testata_finale_arcade()
@@ -766,3 +773,4 @@ elif schermata_attuale == "quiz":        schermata_quiz()
 elif schermata_attuale == "gioco":       schermata_gioco()
 elif schermata_attuale == "portafoglio": Portafoglio()
 elif schermata_attuale == "numerologia": schermata_numerologia()
+elif schermata_attuale == "numerologia_app": Numerologia()
