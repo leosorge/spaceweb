@@ -561,25 +561,6 @@ def schermata_quiz():
         logo_default = "https://vincos.it/wp-content/uploads/2026/02/vincos-logo.png"
         cols = st.columns(3)
 
-''' modificato il 27/03/26
-        for i, (q_id, info) in enumerate(quiz_info.items()):
-            with cols[i % 3]:
-                st.markdown('<div class="card-anchor"></div>', unsafe_allow_html=True)
-                logo_corso = info.get("logo", logo_default)
-                unita = "Qwat" if q_id == 2 else "Punti"
-                if q_id > 6:
-                    st.markdown(f'<div class="card-container card-coming"><div class="card-title" style="color:#666;">🕒 COMING SOON</div><div class="card-body-text">Modulo in fase di sviluppo.</div><img src="{logo_corso}" class="card-img-dinamica"><div class="punti-badge" style="color:#777;">+0 {unita}</div></div>', unsafe_allow_html=True)
-                else:
-                    col_p    = f"punteggio{q_id}"
-                    n_utenti = 0
-                    if not df_utenti.empty and col_p in df_utenti.columns:
-                        n_utenti = len(df_utenti[df_utenti[col_p].fillna(0) > 0])
-                    st.markdown(f'<div class="card-container card-active"><div class="punti-badge">+100 {unita}</div><div class="card-title">⭐ {info.get("nome","").upper()}</div><div class="card-body-text"><b>Sponsor:</b> {info.get("sponsor","N/D")}<br><b>Premio:</b> {info.get("premio","N/D")}</div><div class="card-stats-mini">👥 Utenti: {n_utenti} | 🕒 Update: {info.get("data_mod","N/D")}</div><img src="{logo_corso}" class="card-img-dinamica"></div>', unsafe_allow_html=True)
-                    if st.button(f"🚀 Avvia Quiz {q_id}", key=f"qt{q_id}", width="stretch"):
-                        ss.quiz_tipo=q_id; ss.quiz_idx=0; ss.quiz_score=0; ss.quiz_msg=""; st.rerun()
-...
-# aggiunto il 27/03/26
-
 # --- CICLO CORRETTO PER SCHERMATA_QUIZ IN APP.PY ---
         for i, (q_id, info) in enumerate(quiz_info.items()):
             with cols[i % 3]:
