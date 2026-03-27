@@ -47,7 +47,7 @@ QUIZ_DATI = {
         "logo": "https://onewedge.com/wp-content/uploads/2023/12/new-header-3.png" # <--- AGGIUNTO QUI
     },
     7: {
-        "nome": "Quiz 7",
+        "nome": "Coming Soon",
         "sponsor": "TBD",
         "premio": "Coming Soon",
         "data_mod": "00/00/00",
