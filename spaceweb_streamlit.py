@@ -739,8 +739,8 @@ def schermata_gioco():
 
     with col_legenda:
         nome_display = ss.nome or "Tu"
-        st.markdown(f'''<div style="margin-top:2.2rem;font-size:0.85rem;font-family:monospace;color:#8899bb;line-height:2.2;">
-            <div class="section-title" style="margin-bottom:8px;">▸ LEGENDA</div>
+        st.markdown(f"""<div style="margin-top:2.2rem;font-size:0.85rem;font-family:monospace;color:#8899bb;line-height:2.2;">
+            <div class="section-title" style="margin-bottom:8px;">&#9656; LEGENDA</div>
             <span style="color:#ff3311;">●</span> Ostacolo (-20)<br>
             <span style="color:#00dd66;">●</span> Bonus (+20⚡+10 scudo)<br>
             <span style="color:#8899aa;border:1px solid #8899aa;border-radius:50%;padding:0 2px;">○</span> Stealth (-15)<br>
@@ -749,7 +749,7 @@ def schermata_gioco():
             <span style="color:#FFD700;">●</span> {nome_display}<br>
             <span style="color:#88ccff;">●</span> Scudo ({ss.scudo}%)<br>
             <span style="color:hotpink;">●</span> Tempesta (-w/2)
-        </div>''', unsafe_allow_html=True)
+        </div>""", unsafe_allow_html=True)
 
     play_sound_event(ss.sound_event)
     ss.sound_event = ""
