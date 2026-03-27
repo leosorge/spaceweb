@@ -142,6 +142,8 @@ def Portafoglio():
 
     # --- DATI E GRIGLIA ---
     quiz_info = getattr(corsi, 'QUIZ_DATI', {})
+    # NUOVA RIGA: Conta quanti corsi ci sono (se hai aggiunto 8 e 9, sarà 9) - 27/03/26
+    numero_corsi_totali = len(quiz_info) 
     df_utenti = ss.get('db', pd.DataFrame())
     cols = st.columns(3)
     logo_default = "https://vincos.it/wp-content/uploads/2026/02/vincos-logo.png"
@@ -151,8 +153,8 @@ def Portafoglio():
             st.markdown('<div class="card-anchor"></div>', unsafe_allow_html=True)
             logo_corso = info.get('logo', logo_default)
             unita = "Qwat" if q_id == 2 else "Punti"
-
-            if q_id > 6:
+            # modifica ta per elenco automatico di tutti i quiz (prima era 6 quiz) - 27/02/26
+            if q_id > numero_corsi_totali:
                 html_card = f"""
                 <div class="card-container card-coming">
                     <div class="card-title" style="color: #666;">🕒 COMING SOON</div>
