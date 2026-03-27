@@ -47,26 +47,27 @@ QUIZ_DATI = {
         "logo": "https://onewedge.com/wp-content/uploads/2023/12/new-header-3.png" # <--- AGGIUNTO QUI
     },
     7: {
-        "nome": "Coming Soon",
-        "sponsor": "TBD",
-        "premio": "Coming Soon",
-        "data_mod": "00/00/00",
-        "logo": "https://onewedge.com/wp-content/uploads/2023/12/new-header-3.png" # <--- AGGIUNTO QUI
-    },
-    8: {
         "nome": "Future Chip 1",
         "sponsor": "Chip Select",
         "premio": "Free training",
         "data_mod": "27/03/26",
         "logo": "https://www.greenstart.it/wp/wp-content/uploads/2022/02/GS-Chip.png"
     },
-    9: {
+    8: {
         "nome": "Future Chip 2",
         "sponsor": "Chip Select",
         "premio": "Free training",
         "data_mod": "27/03/26",
         "logo": "https://www.greenstart.it/wp/wp-content/uploads/2022/02/GS-Chip.png"
     },
+    9: {
+        "nome": "Coming Soon",
+        "sponsor": "In arrivo",
+        "premio": "TBA",
+        "data_mod": "2026",
+        "logo": "https://vincos.it/wp-content/uploads/2026/02/vincos-logo.png"
+    }
+
 }
 
 DOMANDE = {
