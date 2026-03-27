@@ -151,15 +151,15 @@ def Portafoglio():
     # --- CICLO DI ENUMERAZIONE CORSI ---
     for i, (q_id, info) in enumerate(quiz_info.items()):
         with cols[i % 3]:
-            # Recupero dati base
             st.markdown('<div class="card-anchor"></div>', unsafe_allow_html=True)
+            
+            # Recupero dati con valori di backup per evitare crash
+            nome_corso = str(info.get("nome", ""))
             logo_corso = info.get('logo', logo_default)
-            nome_corso = info.get("nome", "")
             unita = "Qwat" if q_id == 2 else "Punti"
 
-            # 1. CONTROLLO: È UN CORSO "COMING SOON"?
-            # Verifichiamo se il nome contiene "coming soon" o se è vuoto
-            if "coming soon" in nome_corso.lower() or not nome_corso:
+            # CONTROLLO: Se il nome contiene "coming soon" o è vuoto -> Card Grigia
+            if "coming soon" in nome_corso.lower() or nome_corso == "":
                 html_card = f"""
                 <div class="card-container card-coming">
                     <div class="card-title" style="color: #666;">🕒 COMING SOON</div>
@@ -168,13 +168,11 @@ def Portafoglio():
                     <div class="punti-badge" style="color: #777;">+0 {unita}</div>
                 </div>
                 """
-            
-            # 2. ALTRIMENTI: È UN CORSO ATTIVO
             else:
+                # CARD ATTIVA
                 col_p = f"punteggio{q_id}"
                 n_utenti = 0
                 if not df_utenti.empty and col_p in df_utenti.columns:
-                    # Conta quanti utenti hanno un punteggio > 0 in questo corso
                     n_utenti = len(df_utenti[df_utenti[col_p].fillna(0) > 0])
                 
                 html_card = f"""
@@ -191,10 +189,7 @@ def Portafoglio():
                     <img src="{logo_corso}" class="card-img-dinamica">
                 </div>
                 """
-            
-            # Rendering della card scelta
             st.markdown(html_card, unsafe_allow_html=True)
-
     st.markdown("---")
     # Aggiornato per API 2026
     if st.button("« TORNA AL PANNELLO AMMINISTRATORE", width='stretch'):
