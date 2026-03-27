@@ -183,13 +183,13 @@ st.markdown("""
     }
 
     /* Bottoni Primari (es. AVVIA MISSIONE) */
-    div.stButton > button[kind="primary"] {
+    div.stButton > button {
         background-color: #FFFFFF !important;
         color: #121212 !important;
         border: 1px solid #FFFFFF !important;
         font-weight: 600 !important;
     }
-    div.stButton > button[kind="primary"]:hover {
+    div.stButton > button:hover {
         background-color: #EEEEEE !important;
     }
 
@@ -376,7 +376,7 @@ def schermata_login():
     with col2:
         st.markdown('<div class="prd-subtitle" style="text-align:center;">Autenticazione Operatore</div>', unsafe_allow_html=True)
         nome = st.text_input("Identificativo Cadetto:", placeholder="▸ Inserisci nome...", label_visibility="collapsed")
-        if st.button("🚀 INIZIA MISSIONE SCIENTIFICA", kind="primary", use_container_width=True):
+        if st.button("🚀 INIZIA MISSIONE SCIENTIFICA", use_container_width=True):
             if nome.strip():
                 st.session_state.nome = nome.strip()
                 # Carica dati se esistente o crea nuovo
@@ -510,7 +510,7 @@ def schermata_quiz():
             ss.w += ss.quiz_score
             ss.scudo = min(100, ss.scudo + 5) # Piccolo bonus scudo per completamento
             
-            if st.button("CONVALIDA E CHIUDA TEST", kind="primary", use_container_width=True):
+            if st.button("CONVALIDA E CHIUDA TEST", use_container_width=True):
                 ss.quiz_tipo = None
                 ss.quiz_idx = 0
                 ss.quiz_score = 0
@@ -538,7 +538,7 @@ def schermata_gioco():
         
         st.markdown("---")
         # Pulsante primario per Quiz
-        if st.button("🎓 ACCEDI MODULI ADDESTRAMENTO", kind="primary", use_container_width=True):
+        if st.button("🎓 ACCEDI MODULI ADDESTRAMENTO", use_container_width=True):
             st.session_state.schermata = "quiz"
             st.rerun()
         
