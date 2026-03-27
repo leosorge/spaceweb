@@ -154,7 +154,7 @@ def Portafoglio():
             logo_corso = info.get('logo', logo_default)
             unita = "Qwat"  q_id == 2 else "Punti"
             # modica ta per elenco automatico di tutti i quiz (prima era 6 quiz) - 27/02/26
-           if not info.get("nome"):
+            if not info.get("nome"):
                 html_card = f"""
                 <div class="card-container card-coming">
                     <div class="card-title" style="color: #666;">🕒 COMING SOON</div>
