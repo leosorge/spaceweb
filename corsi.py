@@ -182,7 +182,7 @@ DOMANDE = {
         {"t": "Perché proporre 'Qwat' invece di Qubit?","o": ["A) Maggiore potenza", "B) Evita confusione cubit biblico", "C) Acronimo"],     "c": "B", "s": "Qubit genera confusione con l'unità di misura biblica."},
         {"t": "La moneta che ruota simboleggia:",       "o": ["A) Sovrapposizione", "B) Errore di calcolo", "C) Scelta definita"],             "c": "A", "s": "Coesistenza di diverse possibilità prima della misurazione."},
         {"t": "Funzione principale del Digital Twin?",  "o": ["A) Avatar metaverso", "B) Simulare operazioni", "C) Sostituire lavoratori"],   "c": "B", "s": "Modello digitale per testare e simulare eventi in sicurezza."},
-        {"t": "Lettura Distruttiva significa:",         "o": ["A) Danno hardware", "B) Cancellazione privacy", "C) Scelta distrugge alterna    
+         {"t": "Lettura Distruttiva significa:",         "o": ["A) Danno hardware", "B) Cancellazione privacy", "C) Scelta distrugge alternative"], "c": "C", "s": "La funzione d'onda collassa: le alternative scompaiono."},
     ],
 
 }
