@@ -133,7 +133,7 @@ def Portafoglio():
     
     # --- INFO UTENTE ---
     nome_attuale = ss.get('nome', '')
-     nome_attuale and nome_attuale.lower() != "vincos":
+    if nome_attuale and nome_attuale.lower() != "vincos":
         st.markdown(f'<p class="white-text">👤 <b>Cadetto:</b> {nome_attuale}</p>', unsafe_allow_html=True)
     else:
         st.markdown('<p class="white-text">🔑 <b>Status:</b> Sessione Amministratore</p>', unsafe_allow_html=True)
