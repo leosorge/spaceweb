@@ -148,32 +148,39 @@ def Portafoglio():
     cols = st.columns(3)
     logo_default = "https://vincos.it/wp-content/uploads/2026/02/vincos-logo.png"
     
+    # --- CICLO DI ENUMERAZIONE CORSI ---
     for i, (q_id, info) in enumerate(quiz_info.items()):
         with cols[i % 3]:
+            # Recupero dati base
             st.markdown('<div class="card-anchor"></div>', unsafe_allow_html=True)
             logo_corso = info.get('logo', logo_default)
+            nome_corso = info.get("nome", "")
             unita = "Qwat" if q_id == 2 else "Punti"
-            # modica ta per elenco automatico di tutti i quiz (prima era 6 quiz) - 27/02/26
-            if not info.get("nome"):
+
+            # 1. CONTROLLO: È UN CORSO "COMING SOON"?
+            # Verifichiamo se il nome contiene "coming soon" o se è vuoto
+            if "coming soon" in nome_corso.lower() or not nome_corso:
                 html_card = f"""
                 <div class="card-container card-coming">
                     <div class="card-title" style="color: #666;">🕒 COMING SOON</div>
                     <div class="card-body-text">Modulo in fase di sviluppo.</div>
-                    <img src="{logo_corso}" class="card-img-dinamica">
+                    <img src="{logo_corso}" class="card-img-dinamica" style="filter: grayscale(1); opacity: 0.4;">
                     <div class="punti-badge" style="color: #777;">+0 {unita}</div>
                 </div>
                 """
+            
+            # 2. ALTRIMENTI: È UN CORSO ATTIVO
             else:
                 col_p = f"punteggio{q_id}"
                 n_utenti = 0
                 if not df_utenti.empty and col_p in df_utenti.columns:
-                    # Protezione contro errori di tipo nel DB
+                    # Conta quanti utenti hanno un punteggio > 0 in questo corso
                     n_utenti = len(df_utenti[df_utenti[col_p].fillna(0) > 0])
                 
                 html_card = f"""
                 <div class="card-container card-active">
                     <div class="punti-badge">+100 {unita}</div>
-                    <div class="card-title">⭐ {info.get("nome", "").upper()}</div>
+                    <div class="card-title">⭐ {nome_corso.upper()}</div>
                     <div class="card-body-text">
                         <b>Sponsor:</b> {info.get("sponsor", "N/D")}<br>
                         <b>Premio:</b> {info.get("premio", "N/D")}
@@ -184,6 +191,8 @@ def Portafoglio():
                     <img src="{logo_corso}" class="card-img-dinamica">
                 </div>
                 """
+            
+            # Rendering della card scelta
             st.markdown(html_card, unsafe_allow_html=True)
 
     st.markdown("---")
