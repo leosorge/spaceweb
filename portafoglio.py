@@ -190,6 +190,13 @@ def Portafoglio():
                 </div>
                 """
             st.markdown(html_card, unsafe_allow_html=True)
+            # ... dopo st.markdown(html_card, unsafe_allow_html=True) ...          
+            # Se NON è un "Coming Soon", aggiungi il tasto per iniziare
+            if "coming soon" not in nome_corso.lower() and nome_corso != "":
+                if st.button(f"AVVIA MISSIONE {q_id}", key=f"btn_{q_id}", use_container_width=True):
+                    ss.quiz_attuale = q_id
+                    ss.schermata = "quiz"
+                    st.rerun()
     st.markdown("---")
     # Aggiornato per API 2026
     if st.button("« TORNA AL PANNELLO AMMINISTRATORE", width='stretch'):
