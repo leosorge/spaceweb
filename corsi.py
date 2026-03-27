@@ -114,13 +114,6 @@ DOMANDE = {
         {"t": "Perché standard industriali?",  "o": ["A) Uptime", "B) Estetica e brand", "C) Controllo dei costi"],          "c": "A", "s": "Sono necessari componenti progettati su misura, ridondati, con magazzino ricambi locale e manutenzione statistica o predittiva."},
     ],
     7: [
-        {"t": "Differenza qubit logici e fisici?",      "o": ["A) HW vs SW", "B) Logici correggono errori", "C) Temperatura"],                "c": "B", "s": "I qubit logici raggruppano fisici instabili per affidabilità."},
-        {"t": "Perché proporre 'Qwat' invece di Qubit?","o": ["A) Maggiore potenza", "B) Evita confusione cubit biblico", "C) Acronimo"],     "c": "B", "s": "Qubit genera confusione con l'unità di misura biblica."},
-        {"t": "La moneta che ruota simboleggia:",       "o": ["A) Sovrapposizione", "B) Errore di calcolo", "C) Scelta definita"],             "c": "A", "s": "Coesistenza di diverse possibilità prima della misurazione."},
-        {"t": "Funzione principale del Digital Twin?",  "o": ["A) Avatar metaverso", "B) Simulare operazioni", "C) Sostituire lavoratori"],   "c": "B", "s": "Modello digitale per testare e simulare eventi in sicurezza."},
-        {"t": "Lettura Distruttiva significa:",         "o": ["A) Danno hardware", "B) Cancellazione privacy", "C) Scelta distrugge alternative"], "c": "C", "s": "La funzione d'onda collassa: le alternative scompaiono."},
-    ],
-    8: [
         {
             "t": "Perché i wafer da 300mm richiedono un'automazione quasi totale?",
             "o": ["A) Sono troppo pesanti e costosi per il maneggio umano", "B) Gli operai preferiscono guardare i robot lavorare", "C) I wafer sono timidi e temono il contatto fisico"],
@@ -152,7 +145,7 @@ DOMANDE = {
             "s": "Dresda è il leader europeo per volumi massicci e automazione su larga scala."
         }
     ],
-    9: [
+    8: [
         {
             "t": "Cos'è l'Epitassia nella produzione di chip GaN?",
             "o": ["A) Una danza rituale dei tecnici", "B) La crescita controllata di cristalli sopra il wafer", "C) Un tipo di pasta molto sottile"],
@@ -184,4 +177,12 @@ DOMANDE = {
             "s": "Il Pilastro 2 punta alla sicurezza dell'approvvigionamento tramite impianti di produzione integrati."
         }
     ],
+        9: [
+        {"t": "Differenza qubit logici e fisici?",      "o": ["A) HW vs SW", "B) Logici correggono errori", "C) Temperatura"],                "c": "B", "s": "I qubit logici raggruppano fisici instabili per affidabilità."},
+        {"t": "Perché proporre 'Qwat' invece di Qubit?","o": ["A) Maggiore potenza", "B) Evita confusione cubit biblico", "C) Acronimo"],     "c": "B", "s": "Qubit genera confusione con l'unità di misura biblica."},
+        {"t": "La moneta che ruota simboleggia:",       "o": ["A) Sovrapposizione", "B) Errore di calcolo", "C) Scelta definita"],             "c": "A", "s": "Coesistenza di diverse possibilità prima della misurazione."},
+        {"t": "Funzione principale del Digital Twin?",  "o": ["A) Avatar metaverso", "B) Simulare operazioni", "C) Sostituire lavoratori"],   "c": "B", "s": "Modello digitale per testare e simulare eventi in sicurezza."},
+        {"t": "Lettura Distruttiva significa:",         "o": ["A) Danno hardware", "B) Cancellazione privacy", "C) Scelta distrugge alterna    
+    ],
+
 }
