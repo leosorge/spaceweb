@@ -152,7 +152,7 @@ def Portafoglio():
         with cols[i % 3]:
             st.markdown('<div class="card-anchor"></div>', unsafe_allow_html=True)
             logo_corso = info.get('logo', logo_default)
-            unita = "Qwat"  q_id == 2 else "Punti"
+            unita = "Qwat" if q_id == 2 else "Punti"
             # modica ta per elenco automatico di tutti i quiz (prima era 6 quiz) - 27/02/26
             if not info.get("nome"):
                 html_card = f"""
