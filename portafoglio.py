@@ -79,7 +79,7 @@ def Portafoglio():
             flex-direction: column;
             box-shadow: 2px 2px 15px rgba(0,0,0,0.5);
             margin-bottom: 20px;
-            font-family: sans-serif;
+            font-family: sans-ser;
             box-sizing: border-box;
             overflow: hidden;
             text-align: center;
@@ -133,7 +133,7 @@ def Portafoglio():
     
     # --- INFO UTENTE ---
     nome_attuale = ss.get('nome', '')
-    if nome_attuale and nome_attuale.lower() != "vincos":
+     nome_attuale and nome_attuale.lower() != "vincos":
         st.markdown(f'<p class="white-text">👤 <b>Cadetto:</b> {nome_attuale}</p>', unsafe_allow_html=True)
     else:
         st.markdown('<p class="white-text">🔑 <b>Status:</b> Sessione Amministratore</p>', unsafe_allow_html=True)
@@ -152,9 +152,9 @@ def Portafoglio():
         with cols[i % 3]:
             st.markdown('<div class="card-anchor"></div>', unsafe_allow_html=True)
             logo_corso = info.get('logo', logo_default)
-            unita = "Qwat" if q_id == 2 else "Punti"
-            # modifica ta per elenco automatico di tutti i quiz (prima era 6 quiz) - 27/02/26
-            if q_id > numero_corsi_totali:
+            unita = "Qwat"  q_id == 2 else "Punti"
+            # modica ta per elenco automatico di tutti i quiz (prima era 6 quiz) - 27/02/26
+           if not info.get("nome"):
                 html_card = f"""
                 <div class="card-container card-coming">
                     <div class="card-title" style="color: #666;">🕒 COMING SOON</div>
