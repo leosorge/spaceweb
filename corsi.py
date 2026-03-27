@@ -52,7 +52,7 @@ QUIZ_DATI = {
         "premio": "Coming Soon",
         "data_mod": "00/00/00",
         "logo": "https://onewedge.com/wp-content/uploads/2023/12/new-header-3.png" # <--- AGGIUNTO QUI
-    }
+    },
     8: {
         "nome": "Future Chip 1",
         "sponsor": "Chip Select",
