@@ -66,7 +66,7 @@ QUIZ_DATI = {
         "premio": "Free training",
         "data_mod": "27/03/26",
         "logo": "https://www.greenstart.it/wp/wp-content/uploads/2022/02/GS-Chip.png"
-    }
+    },
 }
 
 DOMANDE = {
