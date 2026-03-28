@@ -597,8 +597,8 @@ def schermata_gioco():
     with col_mappa:
         st.markdown('<div class="section-title">🌌 VISTA SETTORE SOTTOSPAZIO</div>', unsafe_allow_html=True)
         buf = disegna_griglia_cockpit()
-        # FIX: st.image non accetta width='stretch', usa use_container_width=True
-        st.image(buf, use_container_width=True)
+        # FIX: st.image non accetta width='stretch', usa width=True
+        st.image(buf, width=True)
         
         if ss.msg:
             st.markdown(f'<div class="msg-box" style="font-size:0.8rem; color:#AAA;">📡 LOG: {ss.msg}</div>', unsafe_allow_html=True)
