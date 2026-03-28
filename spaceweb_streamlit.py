@@ -461,75 +461,79 @@ def nuova_partita(nome):
     st.session_state.sound_event = ""
     st.session_state.schermata = "gioco"
 
-# --- TROVA E SOSTITUISCI QUESTA FUNZIONE (circa riga 400) ---
 def disegna_griglia_cockpit():
-
-    # Mappa la lettera della direzione in gradi
-    angoli = {'N': 0, 'E': -90, 'S': -180, 'O': -270}
-    angolo_deg = angoli.get(st.session_state.get('direzione', 'N'), 0)
-
-    # Applica la rotazione al marker della tua nave
-    t = mtransforms.Affine2D().rotate_deg(angolo_deg)
-    
-    # Disegna la nave (se astronave_path è un oggetto Path)
-    ax.scatter(px, py, marker=astronave_path.transformed(t), s=450, color='#FFFFFF', edgecolor='#FFD700', zorder=6)
-    
     ss = st.session_state
-    fig = plt.figure(figsize=(7, 7))
-    # Usiamo add_axes([0,0,1,1]) per eliminare ogni bordo bianco e far combaciare lo sfondo
+    
+    # 1. SETUP FIGURA (Unificato)
+    fig = plt.figure(figsize=(7, 7), facecolor='#02040f')
+    # add_axes([0,0,1,1]) elimina i bordi bianchi
     ax = fig.add_axes([0, 0, 1, 1])
     ax.set_facecolor('#02040f')
     
-    # Pulizia totale: niente griglia Matplotlib, niente assi, niente numeri
+    # Pulizia assi
     ax.grid(False)
     ax.set_xticks([]); ax.set_yticks([])
     ax.set_xlim(-0.5, 9.5); ax.set_ylim(-0.5, 9.5)
 
-    # 1. Caricamento Sfondo (Il cuore dell'estetica imm2)
+    # 2. CARICAMENTO SFONDO
     bg_path = "p_background.png"
     if os.path.exists(bg_path):
         import matplotlib.image as mpimg
         try:
             img = mpimg.imread(bg_path)
             ax.imshow(img, extent=[-0.5, 9.5, -0.5, 9.5], zorder=0)
-        except Exception:
-            pass # Se l'immagine manca o è corrotta, resta lo sfondo scuro
+        except:
+            pass
 
-    # 2. Coordinate Navicelle
+    # 3. LOGICA ROTAZIONE
+    # Recuperiamo la direzione (default Nord)
+    direzione = ss.get('direzione', 'N')
+    angoli = {'N': 0, 'E': -90, 'S': -180, 'O': -270}
+    angolo_deg = angoli.get(direzione, 0)
+    
+    # Creiamo la trasformazione per la rotazione
+    import matplotlib.transforms as mtransforms
+    t = mtransforms.Affine2D().rotate_deg(angolo_deg)
+
+    # 4. COORDINATE
     px, py = int(ss.pos[0]), int(ss.pos[1])
     enx, eny = int(ss.pos_nemica[0]), int(ss.pos_nemica[1])
 
-    # 3. Disegno Bonus (Qwat) e Ostacoli
-    # Usiamo scatter per un look più "particellare"
-    for p in ss.l: ax.scatter(p[0], p[1], s=80, color='#FF4444', alpha=0.6, zorder=3) # Ostacoli
-    for p in ss.q: ax.scatter(p[0], p[1], s=100, color='#00FF88', alpha=0.8, edgecolors='white', zorder=3) # Qwat Bonus
+    # 5. DISEGNO ELEMENTI (Ostacoli e Bonus)
+    for p in ss.l: 
+        ax.scatter(p[0], p[1], s=80, color='#FF4444', alpha=0.6, zorder=3) 
+    for p in ss.q: 
+        ax.scatter(p[0], p[1], s=100, color='#00FF88', alpha=0.8, edgecolors='white', zorder=3)
 
-    # 4. Effetto Esplosione (se presente nel tuo codice)
-    if [enx,eny] in [tuple(int(v) for v in x) for x in ss.get("esplosione",[])]:
-        ax.scatter(enx, eny, s=300, color='hotpink', alpha=0.5, zorder=4)
+    # 6. ESPLOSIONI
+    # Verifichiamo se c'è un'esplosione attiva nelle coordinate del nemico
+    if any(list(e) == [enx, eny] for e in ss.get("esplosione", [])):
+        ax.scatter(enx, eny, s=500, color='hotpink', alpha=0.5, zorder=4, edgecolors='white', linewidth=2)
 
-    # 5. Navicella Nemica (Rossa)
+    # 7. NAVE NEMICA
     ax.scatter(enx, eny, marker=astronave_nemica_path, s=300, color='#F00', alpha=0.8, zorder=5) 
     
-    # 6. Tua Navicella (Bianca, centrata)
-    ax.scatter(px, py, marker=astronave_path, s=450, color='#FFFFFF', edgecolor='#FFD700', linewidth=1.2, zorder=6)
+    # 8. TUA NAVICELLA (Con Rotazione Applicata!)
+    # Usiamo .transformed(t) per orientare il marker
+    ax.scatter(px, py, marker=astronave_path.transformed(t), 
+               s=450, color='#FFFFFF', edgecolor='#FFD700', linewidth=1.2, zorder=6)
 
-    # 7. Scudo (Se attivo)
+    # 9. SCUDO (Se attivo)
     if ss.scudo > 0:
-        shield = plt.Circle((px, py), 0.55, fill=False, edgecolor='white', linewidth=1.5, alpha=ss.scudo/100, zorder=7)
+        alpha_scudo = max(0.1, min(0.6, ss.scudo/100))
+        shield = plt.Circle((px, py), 0.55, fill=False, edgecolor='#4499ff', 
+                            linewidth=2, alpha=alpha_scudo, zorder=7)
         ax.add_patch(shield)
 
-    # Invertiamo l'asse Y per avere il Nord in alto (standard spaziale)
-    ax.invert_yaxis()
+    # 10. FINALIZZAZIONE
+    ax.invert_yaxis() # Nord in alto
     ax.set_aspect('equal')
     
-    # Salvataggio nel buffer per Streamlit
     buf = io.BytesIO()
     plt.savefig(buf, format='png', dpi=100, facecolor='#02040f')
     plt.close(fig)
     buf.seek(0)
-    return buf
-    
+    return buf    
 # --- SCHERMATE (Redesign Cyberpunk Cockpit) ---
 
 def schermata_quiz():
