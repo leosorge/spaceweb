@@ -410,58 +410,48 @@ def nuova_partita(nome):
     st.session_state.schermata = "gioco"
 
 def disegna_griglia_cockpit():
-    # Modifica Matplotlib per blending con imm2 (Cyberpunk Neon)
     ss  = st.session_state
     fig = plt.figure(figsize=(7, 7))
-    # Nuovi colori base space_theme.css (PRD compliant)
-    fig.patch.set_facecolor('#02040f') # Charcoal background
+    # Colori scuri per dashboard scientifica
+    fig.patch.set_facecolor('#02040f') 
     ax  = fig.add_axes([0.06, 0.04, 0.91, 0.93])
-    ax.set_facecolor('#1A2238') # Area mappa Midnight Blue
+    ax.set_facecolor('#1A2238') 
 
     ax.set_xlim(-0.5, 9.5); ax.set_ylim(-0.5, 9.5)
     ax.set_xticks(range(10)); ax.set_yticks(range(10))
-    # Griglia sottile bianca traslucida imm2 style
     ax.tick_params(colors='#8899aa', labelsize=8)
     ax.grid(True, linestyle='-', linewidth=0.5, alpha=0.15, color='#FFFFFF')
 
-    bg_path = "p_background.png" # image_12.png
+    # Carica sfondo se presente
+    bg_path = "p_background.png"
     if os.path.exists(bg_path):
         import matplotlib.image as mpimg
-        ax.imshow(mpimg.imread(bg_path), extent=[-0.5,9.5,-0.5,9.5], alpha=0.75, zorder=0)
+        ax.imshow(mpimg.imread(bg_path), extent=[-0.5,9.5,-0.5,9.5], alpha=0.7, zorder=0)
 
-    # Posizione Cadetto (▲ Bianco)
-    px,py = int(ss.pos[0]),int(ss.pos[1])
+    # Posizione Cadetto (coordinate intere per evitare errori)
+    px, py = int(ss.pos[0]), int(ss.pos[1])
 
-    # --- AGGIUNTA EFFETTI NEON concentrici imm2 style ---
-    for r in range(1, 10, 2):
-        # Cerchi concentrici neon-cyan parziali (punteggiati)
-        ax.add_patch(plt.Circle((px,py), r, fill=False, edgecolor='#4499ff', linestyle=':', alpha=0.15, linewidth=0.7, zorder=2))
-    
-    # Sweep radar parziale neon-cyan
-    from matplotlib.patches import Wedge
-    ax.add_patch(Wedge((px,py), 8, angle1=30, angle2=120, color='#4499ff', alpha=0.03, zorder=1))
+    # Effetto Neon Concentrico (Stile imm2)
+    for r in [2, 4, 6]:
+        circ = plt.Circle((px, py), r, fill=False, edgecolor='#4499ff', linestyle=':', alpha=0.2, linewidth=0.8)
+        ax.add_patch(circ)
 
-    # Altri oggetti (Ostacoli/Bonus/Tempeste) disegnati con blending scuro/neon
-    for p in ss.l: ax.plot(p[0], p[1], 'ro', markersize=9, alpha=0.7, zorder=3) # Rosso Ostacolo
-    for p in ss.q: ax.plot(p[0], p[1], 'go', markersize=9, alpha=0.7, zorder=3) # Verde Bonus
-    for p in ss.s: ax.plot(p[0], p[1], 'o', markersize=10, color='none', markeredgecolor='#8899aa', markeredgewidth=1.2, linestyle='--', zorder=3) # Stealth Grigio
+    # Disegna Ostacoli e Bonus
+    for p in ss.l: ax.plot(p[0], p[1], 'ro', markersize=7, alpha=0.6) 
+    for p in ss.q: ax.plot(p[0], p[1], 'go', markersize=7, alpha=0.6) 
 
-    # Navi geometriche PRD compliant (Bianca Tu, Rossa Nemico)
-    enx,eny = int(ss.pos_nemica[0]),int(ss.pos_nemica[1])
-    ax.scatter(enx,eny,marker=astronave_nemica_path,s=300,color='#F00',alpha=0.8,zorder=5) # Nemico
-    
-    # Cadetto geometrico Bianco ad alta precisione
-    ax.scatter(px,py,marker=astronave_path,s=450,color='#FFF',edgecolor='#88ccff',linewidth=1.2,zorder=6)
-    # Scudo geometrico ad anello Bianco
+    # Navicella del Cadetto (Bianca ad alta precisione)
+    ax.scatter(px, py, marker=astronave_path, s=400, color='#FFFFFF', edgecolor='#88ccff', zorder=10)
+
+    # Scudo se attivo
     if ss.scudo > 0:
-        ax.add_patch(plt.Circle((px,py),0.55,fill=False,edgecolor='white',linewidth=1, alpha=ss.scudo/100, zorder=5))
+        shield = plt.Circle((px, py), 0.6, fill=False, edgecolor='white', linewidth=1.5, alpha=0.5)
+        ax.add_patch(shield)
 
     ax.invert_yaxis(); ax.set_aspect('equal')
-    plt.tight_layout()
-    buf = io.BytesIO(); plt.savefig(buf,format='png',dpi=100, facecolor='#02040f')
+    buf = io.BytesIO(); plt.savefig(buf, format='png', dpi=100, facecolor='#02040f')
     plt.close(fig); buf.seek(0)
     return buf
-
 # --- SCHERMATE (Redesign Cyberpunk Cockpit) ---
 
 def schermata_quiz():
