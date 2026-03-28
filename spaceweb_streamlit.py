@@ -409,32 +409,70 @@ def nuova_partita(nome):
     st.session_state.sound_event = ""
     st.session_state.schermata = "gioco"
 
+# --- TROVA E SOSTITUISCI QUESTA FUNZIONE (circa riga 400) ---
 def disegna_griglia_cockpit():
     ss  = st.session_state
+    # Usiamo un aspect_ratio quadrato per non distorcere lo sfondo imm2 compliant
     fig = plt.figure(figsize=(7, 7))
-    # Colori scuri per dashboard scientifica
+    # Colori base space_theme.css per blending scuro/neon
     fig.patch.set_facecolor('#02040f') 
     ax  = fig.add_axes([0.06, 0.04, 0.91, 0.93])
+    # Lo sfondo della mappa deve essere Midnight Blue per blended imm2
     ax.set_facecolor('#1A2238') 
 
     ax.set_xlim(-0.5, 9.5); ax.set_ylim(-0.5, 9.5)
     ax.set_xticks(range(10)); ax.set_yticks(range(10))
+    # Griglia Matplotlib molto sottile, quasi invisibile (blending imm2 style)
     ax.tick_params(colors='#8899aa', labelsize=8)
-    ax.grid(True, linestyle='-', linewidth=0.5, alpha=0.15, color='#FFFFFF')
+    ax.grid(True, linestyle='-', linewidth=0.5, alpha=0.1, color='#FFFFFF')
 
-    # Carica sfondo se presente
+    # Carica la nuova immagine composita (CON CERCHI E NEON ALLEGGERITI INCLUSI)
     bg_path = "p_background.png"
     if os.path.exists(bg_path):
         import matplotlib.image as mpimg
-        ax.imshow(mpimg.imread(bg_path), extent=[-0.5,9.5,-0.5,9.5], alpha=0.7, zorder=0)
+        # alpha=0.9 per lasciarla brillante
+        ax.imshow(mpimg.imread(bg_path), extent=[-0.5,9.5,-0.5,9.5], alpha=0.9, zorder=0)
 
-    # Posizione Cadetto (coordinate intere per evitare errori)
+    # Posizione Cadetto (coordinate intere per stabilità)
     px, py = int(ss.pos[0]), int(ss.pos[1])
 
-    # Effetto Neon Concentrico (Stile imm2)
-    for r in [2, 4, 6]:
-        circ = plt.Circle((px, py), r, fill=False, edgecolor='#4499ff', linestyle=':', alpha=0.2, linewidth=0.8)
+    # --- AGGIUNTA EFFETTI CONCENTRICI NEON imm2 style ---
+    # Python 3.14 Safe: usiamo cerchi geometrici semplici, non vettoriali complessi
+    for r in range(1, 10, 2):
+        # Cerchi concentrici punteggiati neon-cyan parziali (per blending scuro)
+        circ = plt.Circle((px,py), r, fill=False, edgecolor='#4499ff', linestyle=':', alpha=0.15, linewidth=0.7, zorder=2)
         ax.add_patch(circ)
+    
+    # Sweep radar parziale neon-cyan (blended imm2 style)
+    # Rimosso il radar Wedge vettoriale che generava TypeError in Python 3.14.
+    # L'effetto radar è ora fornito direttamente dalla nuova p_background.png.
+    
+    # Disegna oggetti sulla mappa (geometrici, puliti PRD)
+    for p in ss.l: ax.plot(p[0], p[1], 'ro', markersize=9, alpha=0.7, zorder=3) # Rosso Ostacolo
+    for p in ss.q: ax.plot(p[0], p[1], 'go', markersize=9, alpha=0.7, zorder=3) # Verde Bonus
+    for p in ss.s: ax.plot(p[0], p[1], 'o', markersize=10, color='none', markeredgecolor='#8899aa', markeredgewidth=1.2, linestyle='--', zorder=3) # Stealth Grigio
+
+    # Navi geometriche PRD compliant (Bianca Tu, Rossa Nemico)
+    enx,eny = int(ss.pos_nemica[0]),int(ss.pos_nemica[1])
+    # Aggiunta effetto esplosione neon imm2 style
+    if [enx,eny] in [tuple(int(v) for v in x) for x in ss.get("esplosione",[])]:
+        ax.plot(enx,eny,'o',markersize=18,color='hotpink',alpha=0.45,zorder=4)
+    
+    # Nemico (Rossa geometrica)
+    ax.scatter(enx,eny,marker=astronave_nemica_path,s=300,color='#F00',alpha=0.8,zorder=5) 
+    
+    # Cadetto geometrico Bianco ad alta precisione
+    ax.scatter(px,py,marker=astronave_path,s=450,color='#FFF',edgecolor='#88ccff',linewidth=1.2,zorder=6)
+    # Scudo geometrico ad anello Bianco
+    if ss.scudo > 0:
+        shield = plt.Circle((px,py),0.55,fill=False,edgecolor='white',linewidth=1, alpha=ss.scudo/100, zorder=5)
+        ax.add_patch(shield)
+
+    ax.invert_yaxis(); ax.set_aspect('equal')
+    plt.tight_layout()
+    buf = io.BytesIO(); plt.savefig(buf, format='png', dpi=100, facecolor='#02040f')
+    plt.close(fig); buf.seek(0)
+    return buf
 
     # Disegna Ostacoli e Bonus
     for p in ss.l: ax.plot(p[0], p[1], 'ro', markersize=7, alpha=0.6) 
