@@ -656,47 +656,47 @@ def schermata_gioco():
                     st.session_state.direzione = 'S' if dy_sel > 0 else 'N'
                 # Nota: se entrambi sono 0, la direzione non cambia.
 
-                # --- ESECUZIONE MOSSA ---
-                def esegui_mossa(dx, dy):
-    ss = st.session_state
+    # --- ESECUZIONE MOSSA ---
+    def esegui_mossa(dx, dy):
+        ss = st.session_state
     
-    # 1. CALCOLO CONSUMO QUADRATICO (ΔX² + ΔY²)
-    costo_energia = (dx**2) + (dy**2)
+        # 1. CALCOLO CONSUMO QUADRATICO (ΔX² + ΔY²)
+        costo_energia = (dx**2) + (dy**2)
     
-    # Verifica se hai abbastanza energia per il salto
-    if ss.w < costo_energia:
-        ss.msg = f"⚠️ ENERGIA INSUFFICIENTE per salto {dx},{dy}! Richiesti: {costo_energia} Qwat."
-        return # Esce dalla funzione senza muovere la nave
+        # Verifica se hai abbastanza energia per il salto
+        if ss.w < costo_energia:
+            ss.msg = f"⚠️ ENERGIA INSUFFICIENTE per salto {dx},{dy}! Richiesti: {costo_energia} Qwat."
+            return # Esce dalla funzione senza muovere la nave
 
-    # 2. CALCOLO NUOVA POSIZIONE (Border-Safe 0-9)
-    ss.pos[0] = min(9, max(0, ss.pos[0] + dx))
-    ss.pos[1] = min(9, max(0, ss.pos[1] + dy))
+        # 2. CALCOLO NUOVA POSIZIONE (Border-Safe 0-9)
+        ss.pos[0] = min(9, max(0, ss.pos[0] + dx))
+        ss.pos[1] = min(9, max(0, ss.pos[1] + dy))
     
-    # Sottrae l'energia dopo il salto confermato
-    ss.w -= costo_energia
+        # Sottrae l'energia dopo il salto confermato
+        ss.w -= costo_energia
 
-    # 3. MOVIMENTO NAVE NEMICA & ESPLOSIONI
-    ss.esplosione = [] 
-    # IA Nemica semplificata
-    if random.random() > 0.4:
-        if ss.pos_nemica[0] < ss.pos[0]: ss.pos_nemica[0] += 1
-        elif ss.pos_nemica[0] > ss.pos[0]: ss.pos_nemica[0] -= 1
-        if ss.pos_nemica[1] < ss.pos[1]: ss.pos_nemica[1] += 1
-        elif ss.pos_nemica[1] > ss.pos[1]: ss.pos_nemica[1] -= 1
+        # 3. MOVIMENTO NAVE NEMICA & ESPLOSIONI
+        ss.esplosione = [] 
+        # IA Nemica semplificata
+        if random.random() > 0.4:
+            if ss.pos_nemica[0] < ss.pos[0]: ss.pos_nemica[0] += 1
+            elif ss.pos_nemica[0] > ss.pos[0]: ss.pos_nemica[0] -= 1
+            if ss.pos_nemica[1] < ss.pos[1]: ss.pos_nemica[1] += 1
+            elif ss.pos_nemica[1] > ss.pos[1]: ss.pos_nemica[1] -= 1
 
-    # Controllo Collisione per Esplosione
-    if ss.pos == ss.pos_nemica:
-        ss.esplosione.append([ss.pos[0], ss.pos[1]])
-        danno = 20
-        ss.scudo -= danno
-        ss.msg = f"💥 IMPATTO DIRETTO! Persi {danno}% scudi."
-    else:
-        ss.msg = f"Salto completato. Consumo: {costo_energia} Qwat."
+        # Controllo Collisione per Esplosione
+        if ss.pos == ss.pos_nemica:
+            ss.esplosione.append([ss.pos[0], ss.pos[1]])
+            danno = 20
+            ss.scudo -= danno
+            ss.msg = f"💥 IMPATTO DIRETTO! Persi {danno}% scudi."
+        else:
+            ss.msg = f"Salto completato. Consumo: {costo_energia} Qwat."
 
-    # 4. AGGIORNAMENTO CONTATORE
-    ss.cnt_mosse += 1 
+        # 4. AGGIORNAMENTO CONTATORE
+        ss.cnt_mosse += 1 
                 
-                st.rerun()
+        st.rerun()
                 
         # --- SISTEMI PLANCIA (Aggiunto Pulsing al Logout o Nuova) ---
         st.markdown('<div class="section-title">▸ SISTEMI PLANCIA</div>', unsafe_allow_html=True)
