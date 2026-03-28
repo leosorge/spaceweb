@@ -473,7 +473,7 @@ def disegna_griglia_cockpit():
     buf = io.BytesIO(); plt.savefig(buf, format='png', dpi=100, facecolor='#02040f')
     plt.close(fig); buf.seek(0)
     return buf
-
+    
     # Disegna Ostacoli e Bonus
     for p in ss.l: ax.plot(p[0], p[1], 'ro', markersize=7, alpha=0.6) 
     for p in ss.q: ax.plot(p[0], p[1], 'go', markersize=7, alpha=0.6) 
