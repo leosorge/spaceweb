@@ -412,8 +412,20 @@ def _inject_sound(event: str):
           o.start(); o.stop(ac.currentTime + {dur});
         }});
         """
-    # components.html con height=0 funziona — Streamlit non filtra gli script dentro iframe
-    components.html(f"""<script>(function(){{ try {{ {js} }} catch(e) {{ console.warn("audio",e); }} }})();</script>""", height=0)
+    # Streamlit ignora height=0 e height=1. 
+    # Usiamo height=2 con iframe nascosto tramite CSS nel parent — 
+    # il JS viene eseguito dentro l'iframe sandbox prima che venga collassato.
+    html_audio = f"""
+    <style>html,body{{margin:0;padding:0;overflow:hidden;}}</style>
+    <script>
+    (function(){{
+      try {{
+        {js}
+      }} catch(e) {{ console.warn("audio",e); }}
+    }})();
+    </script>
+    """
+    components.html(html_audio, height=2)
 
 def mostra_testata_finale_arcade():
     title_hover = MISSIONE_TESTO.replace("\n","&#10;")
@@ -824,9 +836,7 @@ def schermata_gioco():
         with col_sB:
             if st.button("🔄 Nuova", key="btn_nuova"): nuova_partita(ss.nome); st.rerun()
         with col_sC:
-            st.markdown('<div class="pulsing">', unsafe_allow_html=True)
             if st.button("🚪 Logout", key="btn_logout"): ss.schermata="login"; st.session_state.nome=""; st.rerun()
-            st.markdown('</div>', unsafe_allow_html=True)
 
     with col_legenda:
         st.markdown('<div class="section-title">&#9656; LEGENDA OPERATIVA</div>', unsafe_allow_html=True)
@@ -855,7 +865,7 @@ def schermata_admin():
     if not df.empty:
         st.markdown('<div class="section-title">👥 UTENTI REGISTRATI</div>', unsafe_allow_html=True)
         cols_show = ["nome", "ww"] + [f"punteggio{i}" for i in range(1,9) if f"punteggio{i}" in df.columns]
-        st.dataframe(df[cols_show].sort_values("ww", ascending=False), use_container_width=True)
+        st.dataframe(df[cols_show].sort_values("ww", ascending=False), width='stretch')
     else:
         st.info("Nessun utente nel database.")
 
