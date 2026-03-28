@@ -473,7 +473,7 @@ def _setup_audio_engine():
       else                          playSimple(snd);
     });
     </script>
-    """, height=32, key="audio_engine")
+    """, height=32)
 
 
 def _inject_sound(event: str):
