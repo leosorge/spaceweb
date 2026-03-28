@@ -344,7 +344,6 @@ def genera_frase_adams():
 def _inject_sound(event: str):
     if not event:
         return
-    import time
     if event == "alert":
         js = """
         const ac = new (window.AudioContext || window.webkitAudioContext)();
@@ -413,11 +412,8 @@ def _inject_sound(event: str):
           o.start(); o.stop(ac.currentTime + {dur});
         }});
         """
-    uid = int(time.time() * 1000)
-    st.markdown(
-        f'''<script id="snd_{uid}">(function(){{ try {{ {js} }} catch(e) {{ console.warn("audio",e); }} }})();</script>''',
-        unsafe_allow_html=True
-    )
+    # components.html con height=0 funziona — Streamlit non filtra gli script dentro iframe
+    components.html(f"""<script>(function(){{ try {{ {js} }} catch(e) {{ console.warn("audio",e); }} }})();</script>""", height=0)
 
 def mostra_testata_finale_arcade():
     title_hover = MISSIONE_TESTO.replace("\n","&#10;")
@@ -853,10 +849,24 @@ def schermata_admin():
     ss = st.session_state
     mostra_testata_finale_arcade()
     st.markdown('<div class="section-title">🔐 PANNELLO AMMINISTRATORE</div>', unsafe_allow_html=True)
-    st.info("Pannello admin attivo. Aggiungi qui le funzionalità di gestione.")
-    if st.button("← Logout Admin"):
-        ss.schermata = "login"
-        st.rerun()
+
+    # Tabella utenti
+    df = ss.get("db", pd.DataFrame())
+    if not df.empty:
+        st.markdown('<div class="section-title">👥 UTENTI REGISTRATI</div>', unsafe_allow_html=True)
+        cols_show = ["nome", "ww"] + [f"punteggio{i}" for i in range(1,9) if f"punteggio{i}" in df.columns]
+        st.dataframe(df[cols_show].sort_values("ww", ascending=False), use_container_width=True)
+    else:
+        st.info("Nessun utente nel database.")
+
+    st.markdown("---")
+    col_a, col_b = st.columns(2)
+    with col_a:
+        if st.button("🎓 Vai ai Corsi", key="adm_goto_quiz"):
+            ss.quiz_tipo = None; ss.schermata = "quiz"; st.rerun()
+    with col_b:
+        if st.button("🚪 Logout Admin", key="adm_logout"):
+            ss.schermata = "login"; ss.nome = ""; st.rerun()
 
 # ============================================================
 # ROUTER
