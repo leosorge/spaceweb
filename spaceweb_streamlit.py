@@ -362,7 +362,7 @@ def schermata_login():
         colA, colB = st.columns(2)
         with colA:
             # Bottone Primario Cockpit (kind="primary" supportato Streamlit >=1.35)
-            if st.button("🚀 ACCEDI",  use_container_width=True, key="btn_accedi"):
+            if st.button("🚀 ACCEDI",  width='stretch', key="btn_accedi"):
                 if nome.strip():
                     if nome.strip().lower() == "adm":
                         st.session_state.adm_pwd_step = True; st.rerun()
@@ -374,7 +374,7 @@ def schermata_login():
                         nuova_partita(nome.strip())
                         st.rerun()
         with colB:
-            if st.button("🔐 ADM", use_container_width=True, key="btn_admin_login"):
+            if st.button("🔐 ADM", width='stretch', key="btn_admin_login"):
                 st.session_state.adm_pwd_step = True; st.rerun()
 
     if st.session_state.get("adm_pwd_step"):
@@ -577,13 +577,13 @@ def schermata_quiz():
                         </div>
                     """, unsafe_allow_html=True)
                     
-                    if st.button(f"ACCEDI AL TEST {q_id}",  use_container_width=True, key=f"qbtn_{q_id}"):
+                    if st.button(f"ACCEDI AL TEST {q_id}",  width='stretch', key=f"qbtn_{q_id}"):
                         ss.quiz_tipo = q_id
                         ss.quiz_idx = 0; ss.quiz_score = 0
                         st.rerun()
                         
         st.markdown("---")
-        if st.button("← Torna alla Plancia di Comando", use_container_width=True): ss.schermata="gioco"; st.rerun()
+        if st.button("← Torna alla Plancia di Comando", width='stretch'): ss.schermata="gioco"; st.rerun()
         return
 
     # LOGICA TEST IN CORSO (Design imm2 Cockpit)
@@ -601,7 +601,7 @@ def schermata_gioco():
         st.markdown('<div class="section-title">🌌 VISTA SETTORE SOTTOSPAZIO</div>', unsafe_allow_html=True)
         # Mappa Cockpit Geometrica imm2 style
         buf = disegna_griglia_cockpit()
-        st.image(buf, use_container_width=True)
+        st.image(buf, width='stretch')
         
         if ss.msg:
             st.markdown(f'<div class="msg-box" style="font-size:0.8rem; color:#AAA;">📡 LOG: {ss.msg}</div>', unsafe_allow_html=True)
@@ -630,7 +630,7 @@ def schermata_gioco():
             dy_sel = st.selectbox("ΔY", options=[-3,-2,-1,0,+1,+2,+3], format_func=lambda v: f"+{v}" if v>0 else str(v), key="sel_dy")
         with col_go:
             st.markdown("<br>", unsafe_allow_html=True)
-            if st.button("VAI", key="btn_vai", use_container_width=True):
+            if st.button("VAI", key="btn_vai", width='stretch'):
                 # LOGICA ROTAZIONE: Determiniamo la direzione basandoci sullo spostamento maggiore
                 if abs(dx_sel) >= abs(dy_sel) and dx_sel != 0:
                     ss.direzione = 'E' if dx_sel > 0 else 'O'
@@ -644,14 +644,14 @@ def schermata_gioco():
         st.markdown('<div class="section-title">▸ SISTEMI PLANCIA</div>', unsafe_allow_html=True)
         col_sA, col_sB, col_sC = st.columns(3)
         with col_sA:
-            if st.button("🎓 Quiz", use_container_width=True, key="btn_quiz"): ss.quiz_tipo=None; ss.schermata="quiz"; st.rerun()
+            if st.button("🎓 Quiz", width='stretch', key="btn_quiz"): ss.quiz_tipo=None; ss.schermata="quiz"; st.rerun()
         with col_sB:
             # Effetto pulsing opzionale qui se vuoi evidenziare la nuova partita
-            if st.button("🔄 Nuova", use_container_width=True, key="btn_nuova"): nuova_partita(ss.nome); st.rerun()
+            if st.button("🔄 Nuova", width='stretch', key="btn_nuova"): nuova_partita(ss.nome); st.rerun()
         with col_sC:
             # Applichiamo il pulsing al logout per renderlo visibile
             st.markdown('<div class="pulsing">', unsafe_allow_html=True)
-            if st.button("🚪 Logout", use_container_width=True, key="btn_logout"): ss.schermata="login"; st.session_state.nome=""; st.rerun()
+            if st.button("🚪 Logout", width='stretch', key="btn_logout"): ss.schermata="login"; st.session_state.nome=""; st.rerun()
             st.markdown('</div>', unsafe_allow_html=True)
 
     with col_legenda:
