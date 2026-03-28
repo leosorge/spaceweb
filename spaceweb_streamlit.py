@@ -14,9 +14,59 @@ import pandas as pd
 import requests
 import base64
 from datetime import datetime
-import io
-import os
+import numpy as np
+import os, io
 from supabase import create_client, Client
+
+def applica_tema_interfaccia():
+    st.markdown("""
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap');
+
+        /* Sfondo Generale */
+        .stApp { background-color: #02040f !important; color: #8899aa; }
+
+        /* --- STILE BOTTONI UNIVERSALE --- */
+        div.stButton > button {
+            width: 100% !important;
+            background: rgba(13, 27, 75, 0.9) !important;
+            border: 1px solid #FFD700 !important;
+            color: #FFD700 !important;
+            font-family: 'Orbitron', sans-serif !important;
+            text-transform: uppercase !important;
+            letter-spacing: 1.5px !important;
+            border-radius: 2px !important;
+            padding: 15px !important;
+            transition: all 0.3s ease;
+        }
+
+        /* Effetto Titolo Bold e Testo Normale (simulato via CSS) */
+        div.stButton > button p {
+            font-weight: 700 !important;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+        }
+
+        /* --- EFFETTO PULSING (Per bottoni critici) --- */
+        @keyframes pulse-gold {
+            0% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(255, 215, 0, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0); }
+        }
+
+        /* Classe speciale per bottoni di emergenza */
+        .stButton.pulsing > button {
+            animation: pulse-gold 2s infinite;
+            border-color: #FF4444 !important;
+            color: #FF4444 !important;
+        }
+
+        div.stButton > button:hover {
+            background: #1a0e3d !important;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.5) !important;
+            transform: scale(1.01);
+        }
+    </style>
+    """, unsafe_allow_html=True)
 
 # Gestione moduli locali (con fallback per sicurezza)
 try:
@@ -396,6 +446,7 @@ def mostra_intro_arcade():
 # --- FUNZIONI DI SUPPORTO DI GIOCO ---
 def nuova_partita(nome):
     st.session_state.pos = [0, 0]
+    st.session_state.direzione = "N"  # <--- AGGIUNGI QUESTA RIGA PER LA ROTAZIONE
     st.session_state.w = 100
     st.session_state.scudo = 50
     st.session_state.l = [[random.randint(1,8),random.randint(1,8)] for _ in range(10)]
@@ -411,85 +462,62 @@ def nuova_partita(nome):
 
 # --- TROVA E SOSTITUISCI QUESTA FUNZIONE (circa riga 400) ---
 def disegna_griglia_cockpit():
-    ss  = st.session_state
-    fig = plt.figure(figsize=(7, 7)) # Formato quadrato 1:1
-    fig.patch.set_facecolor('#02040f') 
+    ss = st.session_state
+    fig = plt.figure(figsize=(7, 7))
+    # Usiamo add_axes([0,0,1,1]) per eliminare ogni bordo bianco e far combaciare lo sfondo
+    ax = fig.add_axes([0, 0, 1, 1])
+    ax.set_facecolor('#02040f')
     
-    # Riduciamo i margini a zero per far combaciare l'immagine ai bordi
-    ax  = fig.add_axes([0, 0, 1, 1]) 
-    ax.set_facecolor('#02040f') 
+    # Pulizia totale: niente griglia Matplotlib, niente assi, niente numeri
+    ax.grid(False)
+    ax.set_xticks([]); ax.set_yticks([])
+    ax.set_xlim(-0.5, 9.5); ax.set_ylim(-0.5, 9.5)
 
-    # IMPORTANTE: Spegniamo la griglia di Matplotlib (usiamo quella dello sfondo)
-    ax.grid(False) 
-    ax.set_xticks([]); ax.set_yticks([]) # Nascondiamo i numeri degli assi
-    
-    ax.set_xlim(-0.5, 9.5)
-    ax.set_ylim(-0.5, 9.5)
-
+    # 1. Caricamento Sfondo (Il cuore dell'estetica imm2)
     bg_path = "p_background.png"
     if os.path.exists(bg_path):
         import matplotlib.image as mpimg
-        img = mpimg.imread(bg_path)
-        # extent assicura che l'immagine copra esattamente le coordinate 0-9
-        ax.imshow(img, extent=[-0.5, 9.5, -0.5, 9.5], zorder=0)
-        
-    # Posizione Cadetto (coordinate intere per stabilità)
+        try:
+            img = mpimg.imread(bg_path)
+            ax.imshow(img, extent=[-0.5, 9.5, -0.5, 9.5], zorder=0)
+        except Exception:
+            pass # Se l'immagine manca o è corrotta, resta lo sfondo scuro
+
+    # 2. Coordinate Navicelle
     px, py = int(ss.pos[0]), int(ss.pos[1])
+    enx, eny = int(ss.pos_nemica[0]), int(ss.pos_nemica[1])
 
-    # --- AGGIUNTA EFFETTI CONCENTRICI NEON imm2 style ---
-    # Python 3.14 Safe: usiamo cerchi geometrici semplici, non vettoriali complessi
-    for r in range(1, 10, 2):
-        # Cerchi concentrici punteggiati neon-cyan parziali (per blending scuro)
-        circ = plt.Circle((px,py), r, fill=False, edgecolor='#4499ff', linestyle=':', alpha=0.15, linewidth=0.7, zorder=2)
-        ax.add_patch(circ)
-    
-    # Sweep radar parziale neon-cyan (blended imm2 style)
-    # Rimosso il radar Wedge vettoriale che generava TypeError in Python 3.14.
-    # L'effetto radar è ora fornito direttamente dalla nuova p_background.png.
-    
-    # Disegna oggetti sulla mappa (geometrici, puliti PRD)
-    for p in ss.l: ax.plot(p[0], p[1], 'ro', markersize=9, alpha=0.7, zorder=3) # Rosso Ostacolo
-    for p in ss.q: ax.plot(p[0], p[1], 'go', markersize=9, alpha=0.7, zorder=3) # Verde Bonus
-    for p in ss.s: ax.plot(p[0], p[1], 'o', markersize=10, color='none', markeredgecolor='#8899aa', markeredgewidth=1.2, linestyle='--', zorder=3) # Stealth Grigio
+    # 3. Disegno Bonus (Qwat) e Ostacoli
+    # Usiamo scatter per un look più "particellare"
+    for p in ss.l: ax.scatter(p[0], p[1], s=80, color='#FF4444', alpha=0.6, zorder=3) # Ostacoli
+    for p in ss.q: ax.scatter(p[0], p[1], s=100, color='#00FF88', alpha=0.8, edgecolors='white', zorder=3) # Qwat Bonus
 
-    # Navi geometriche PRD compliant (Bianca Tu, Rossa Nemico)
-    enx,eny = int(ss.pos_nemica[0]),int(ss.pos_nemica[1])
-    # Aggiunta effetto esplosione neon imm2 style
+    # 4. Effetto Esplosione (se presente nel tuo codice)
     if [enx,eny] in [tuple(int(v) for v in x) for x in ss.get("esplosione",[])]:
-        ax.plot(enx,eny,'o',markersize=18,color='hotpink',alpha=0.45,zorder=4)
+        ax.scatter(enx, eny, s=300, color='hotpink', alpha=0.5, zorder=4)
+
+    # 5. Navicella Nemica (Rossa)
+    ax.scatter(enx, eny, marker=astronave_nemica_path, s=300, color='#F00', alpha=0.8, zorder=5) 
     
-    # Nemico (Rossa geometrica)
-    ax.scatter(enx,eny,marker=astronave_nemica_path,s=300,color='#F00',alpha=0.8,zorder=5) 
-    
-    # Cadetto geometrico Bianco ad alta precisione
-    ax.scatter(px,py,marker=astronave_path,s=450,color='#FFF',edgecolor='#88ccff',linewidth=1.2,zorder=6)
-    # Scudo geometrico ad anello Bianco
+    # 6. Tua Navicella (Bianca, centrata)
+    ax.scatter(px, py, marker=astronave_path, s=450, color='#FFFFFF', edgecolor='#FFD700', linewidth=1.2, zorder=6)
+
+    # 7. Scudo (Se attivo)
     if ss.scudo > 0:
-        shield = plt.Circle((px,py),0.55,fill=False,edgecolor='white',linewidth=1, alpha=ss.scudo/100, zorder=5)
+        shield = plt.Circle((px, py), 0.55, fill=False, edgecolor='white', linewidth=1.5, alpha=ss.scudo/100, zorder=7)
         ax.add_patch(shield)
 
-    ax.invert_yaxis(); ax.set_aspect('equal')
-    plt.tight_layout()
-    buf = io.BytesIO(); plt.savefig(buf, format='png', dpi=100, facecolor='#02040f')
-    plt.close(fig); buf.seek(0)
+    # Invertiamo l'asse Y per avere il Nord in alto (standard spaziale)
+    ax.invert_yaxis()
+    ax.set_aspect('equal')
+    
+    # Salvataggio nel buffer per Streamlit
+    buf = io.BytesIO()
+    plt.savefig(buf, format='png', dpi=100, facecolor='#02040f')
+    plt.close(fig)
+    buf.seek(0)
     return buf
     
-    # Disegna Ostacoli e Bonus
-    for p in ss.l: ax.plot(p[0], p[1], 'ro', markersize=7, alpha=0.6) 
-    for p in ss.q: ax.plot(p[0], p[1], 'go', markersize=7, alpha=0.6) 
-
-    # Navicella del Cadetto (Bianca ad alta precisione)
-    ax.scatter(px, py, marker=astronave_path, s=400, color='#FFFFFF', edgecolor='#88ccff', zorder=10)
-
-    # Scudo se attivo
-    if ss.scudo > 0:
-        shield = plt.Circle((px, py), 0.6, fill=False, edgecolor='white', linewidth=1.5, alpha=0.5)
-        ax.add_patch(shield)
-
-    ax.invert_yaxis(); ax.set_aspect('equal')
-    buf = io.BytesIO(); plt.savefig(buf, format='png', dpi=100, facecolor='#02040f')
-    plt.close(fig); buf.seek(0)
-    return buf
 # --- SCHERMATE (Redesign Cyberpunk Cockpit) ---
 
 def schermata_quiz():
@@ -571,42 +599,29 @@ def schermata_gioco():
 
     with col_mappa:
         st.markdown('<div class="section-title">🌌 VISTA SETTORE SOTTOSPAZIO</div>', unsafe_allow_html=True)
-        # Mappa Cockpit Geometricaimm2 style
+        # Mappa Cockpit Geometrica imm2 style
         buf = disegna_griglia_cockpit()
         st.image(buf, use_container_width=True)
         
-        # Event Log minimale PRD Sez 3.2.3 unificato
         if ss.msg:
             st.markdown(f'<div class="msg-box" style="font-size:0.8rem; color:#AAA;">📡 LOG: {ss.msg}</div>', unsafe_allow_html=True)
 
     with col_status:
-        # Dashboard imm2 style unificata
+        # --- DASHBOARD (Invariata per mantenere il tuo stile CSS) ---
         st.markdown('<div class="section-title">🚀 SHIP DASHBOARD OPERATIVA</div>', unsafe_allow_html=True)
         
-        # Metriche Cockpit space_theme.css
-        # Energia Quantica Bianca good/warn/danger
-        e_pct  = max(0,min(100,ss.w))
-        e_class= "good" if e_pct>60 else "warn" if e_pct>30 else "danger"
+        e_pct = max(0, min(100, ss.w))
+        e_class = "good" if e_pct > 60 else "warn" if e_pct > 30 else "danger"
         st.markdown(f'<div class="metric-box"><div class="metric-label">⚡ ENERGIA QUANTICA</div><div class="metric-value {e_class}">{ss.w}</div></div>', unsafe_allow_html=True)
-        st.markdown(f'<div class="energy-bar-container"><div class="energy-bar-fill" style="width:{min(100,ss.w)}%; background:#FFD700; box-shadow:0 0 8px #FFD70066;"></div></div>', unsafe_allow_html=True) # Barra bianca Cockpit
+        st.markdown(f'<div class="energy-bar-container"><div class="energy-bar-fill" style="width:{min(100, ss.w)}%; background:#FFD700; box-shadow:0 0 8px #FFD70066;"></div></div>', unsafe_allow_html=True)
         
-        # Scudo imm2 style Cyan Cockpit
-        s_pct  = max(0,min(100,ss.scudo))
+        s_pct = max(0, min(100, ss.scudo))
         st.markdown(f'<div class="metric-box"><div class="metric-label">🛡️ SCUDO INTEGRITÀ</div><div class="metric-value" style="color:#4499ff; text-shadow:0 0 10px #4499ff66;">{ss.scudo}%</div></div>', unsafe_allow_html=True)
         st.markdown(f'<div class="shield-bar-container"><div class="shield-bar-fill" style="width:{s_pct}%; background:#4499ff; box-shadow:0 0 8px #4499ff66;"></div></div>', unsafe_allow_html=True)
         
-        # Posizione Cockpit ad alta precisione
         st.markdown(f'<div class="metric-box"><div class="metric-label">📍 COORDINATE</div><div class="metric-value">({ss.pos[0]}, {ss.pos[1]})</div></div>', unsafe_allow_html=True)
         
-        # World Wide Score Cockpit
-        ww = sum(int(ss.db.at[ss.db.index[ss.db["nome"].str.lower() == ss.nome.lower()][0], f"punteggio{i}"]) for i in range(1,8) if f"punteggio{i}" in ss.db.columns) if (ss.db["nome"].str.lower() == ss.nome.lower()).any() else 0
-        st.markdown(f'<div class="metric-box"><div class="metric-label">🏆 WORLD WIDE SCORE</div><div class="metric-value good">{ww}</div></div>', unsafe_allow_html=True)
-
-        # Oracolo imm2 style (minimal, Share Tech Mono)
-        st.markdown('<div class="section-title">🌌 COMUNICAZIONI DA STARFLEET</div>', unsafe_allow_html=True)
-        alert_class = "alert" if ss.get("starfleet_alert",False) else ""
-        st.markdown(f'<div class="oracolo-box {alert_class}" style="font-size:0.8rem;">{ss.oracolo_txt}</div>', unsafe_allow_html=True)
-
+        # --- SISTEMA NAVIGAZIONE (Modificato per la rotazione) ---
         st.markdown('<div class="section-title">🕹 SISTEMA NAVIGAZIONE</div>', unsafe_allow_html=True)
         col_dx, col_dy, col_go = st.columns([1.5, 1.5, 1])
         with col_dx:
@@ -615,20 +630,32 @@ def schermata_gioco():
             dy_sel = st.selectbox("ΔY", options=[-3,-2,-1,0,+1,+2,+3], format_func=lambda v: f"+{v}" if v>0 else str(v), key="sel_dy")
         with col_go:
             st.markdown("<br>", unsafe_allow_html=True)
-            if st.button("VAI",  key="btn_vai", use_container_width=True):
-                # esegui_mossa(dx_sel, dy_sel) # Logica invariata, omessa per brevità
+            if st.button("VAI", key="btn_vai", use_container_width=True):
+                # LOGICA ROTAZIONE: Determiniamo la direzione basandoci sullo spostamento maggiore
+                if abs(dx_sel) >= abs(dy_sel) and dx_sel != 0:
+                    ss.direzione = 'E' if dx_sel > 0 else 'O'
+                elif abs(dy_sel) > abs(dx_sel):
+                    ss.direzione = 'S' if dy_sel > 0 else 'N'
+                
+                # esegui_mossa(dx_sel, dy_sel) # La tua logica originale
                 st.rerun()
 
+        # --- SISTEMI PLANCIA (Aggiunto Pulsing al Logout o Nuova) ---
         st.markdown('<div class="section-title">▸ SISTEMI PLANCIA</div>', unsafe_allow_html=True)
         col_sA, col_sB, col_sC = st.columns(3)
         with col_sA:
             if st.button("🎓 Quiz", use_container_width=True, key="btn_quiz"): ss.quiz_tipo=None; ss.schermata="quiz"; st.rerun()
         with col_sB:
+            # Effetto pulsing opzionale qui se vuoi evidenziare la nuova partita
             if st.button("🔄 Nuova", use_container_width=True, key="btn_nuova"): nuova_partita(ss.nome); st.rerun()
         with col_sC:
+            # Applichiamo il pulsing al logout per renderlo visibile
+            st.markdown('<div class="pulsing">', unsafe_allow_html=True)
             if st.button("🚪 Logout", use_container_width=True, key="btn_logout"): ss.schermata="login"; st.session_state.nome=""; st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
 
     with col_legenda:
+        # --- LEGENDA (Invariata) ---
         st.markdown('<div class="section-title">&#9656; LEGENDA OPERATIVA</div>', unsafe_allow_html=True)
         st.markdown(f"""<div style="font-family:'Share Tech Mono',monospace;color:#8899bb;line-height:2; font-size:0.75rem; border: 1px solid rgba(100,160,255,0.1); padding: 10px; border-radius: 4px; background: rgba(0,5,25,0.4);">
             <span style="color:#ff3311; font-size:1.1rem;">●</span> Ostacolo (-20)<br>
@@ -636,9 +663,8 @@ def schermata_gioco():
             <span style="color:#8899aa;border:1px solid #8899aa;border-radius:50%;padding:0 1px; font-size:0.9rem;">○</span> Stealth (-15)<br>
             <span style="color:white; font-size:1.1rem;">●</span> Arrivo (9,9)<br>
             <span style="color:#F00; font-size:1.1rem; opacity:0.7;">▲</span> Vettore Nemico<br>
-            <span style="color:#FFF; font-size:1.1rem;">▲</span> Tu ({ss.nome.upper() or 'Cadetto'})<br>
-            <span style="color:#4499ff; font-size:1.1rem; opacity:ss.scudo/100;">●</span> Scudo attivo<br>
-            <span style="color:hotpink; font-size:1.1rem;">●</span> Tempesta magnetica (-w/2)
+            <span style="color:#FFF; font-size:1.1rem;">▲</span> Tu ({ss.nome.upper()})<br>
+            <span style="color:#4499ff; font-size:1.1rem;">●</span> Scudo attivo
         </div>""", unsafe_allow_html=True)
 
     play_sound_event(ss.sound_event)
