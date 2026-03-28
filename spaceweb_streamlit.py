@@ -632,7 +632,7 @@ def schermata_gioco():
         
         st.markdown(f'<div class="metric-box"><div class="metric-label">📍 COORDINATE</div><div class="metric-value">({ss.pos[0]}, {ss.pos[1]})</div></div>', unsafe_allow_html=True)
         
-st.markdown('<div class="section-title">🕹 SISTEMA NAVIGAZIONE</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-title">🕹 SISTEMA NAVIGAZIONE</div>', unsafe_allow_html=True)
         col_dx, col_dy, col_go = st.columns([1.5, 1.5, 1])
         
         with col_dx:
@@ -657,8 +657,44 @@ st.markdown('<div class="section-title">🕹 SISTEMA NAVIGAZIONE</div>', unsafe_
                 # Nota: se entrambi sono 0, la direzione non cambia.
 
                 # --- ESECUZIONE MOSSA ---
-                # Qui chiami la tua funzione che aggiorna ss.pos[0] e ss.pos[1]
-                # esegui_mossa(dx_sel, dy_sel) 
+                def esegui_mossa(dx, dy):
+    ss = st.session_state
+    
+    # 1. CALCOLO CONSUMO QUADRATICO (ΔX² + ΔY²)
+    costo_energia = (dx**2) + (dy**2)
+    
+    # Verifica se hai abbastanza energia per il salto
+    if ss.w < costo_energia:
+        ss.msg = f"⚠️ ENERGIA INSUFFICIENTE per salto {dx},{dy}! Richiesti: {costo_energia} Qwat."
+        return # Esce dalla funzione senza muovere la nave
+
+    # 2. CALCOLO NUOVA POSIZIONE (Border-Safe 0-9)
+    ss.pos[0] = min(9, max(0, ss.pos[0] + dx))
+    ss.pos[1] = min(9, max(0, ss.pos[1] + dy))
+    
+    # Sottrae l'energia dopo il salto confermato
+    ss.w -= costo_energia
+
+    # 3. MOVIMENTO NAVE NEMICA & ESPLOSIONI
+    ss.esplosione = [] 
+    # IA Nemica semplificata
+    if random.random() > 0.4:
+        if ss.pos_nemica[0] < ss.pos[0]: ss.pos_nemica[0] += 1
+        elif ss.pos_nemica[0] > ss.pos[0]: ss.pos_nemica[0] -= 1
+        if ss.pos_nemica[1] < ss.pos[1]: ss.pos_nemica[1] += 1
+        elif ss.pos_nemica[1] > ss.pos[1]: ss.pos_nemica[1] -= 1
+
+    # Controllo Collisione per Esplosione
+    if ss.pos == ss.pos_nemica:
+        ss.esplosione.append([ss.pos[0], ss.pos[1]])
+        danno = 20
+        ss.scudo -= danno
+        ss.msg = f"💥 IMPATTO DIRETTO! Persi {danno}% scudi."
+    else:
+        ss.msg = f"Salto completato. Consumo: {costo_energia} Qwat."
+
+    # 4. AGGIORNAMENTO CONTATORE
+    ss.cnt_mosse += 1 
                 
                 st.rerun()
                 
