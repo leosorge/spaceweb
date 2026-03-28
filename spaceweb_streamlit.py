@@ -412,27 +412,27 @@ def nuova_partita(nome):
 # --- TROVA E SOSTITUISCI QUESTA FUNZIONE (circa riga 400) ---
 def disegna_griglia_cockpit():
     ss  = st.session_state
-    # Usiamo un aspect_ratio quadrato per non distorcere lo sfondo imm2 compliant
-    fig = plt.figure(figsize=(7, 7))
-    # Colori base space_theme.css per blending scuro/neon
+    fig = plt.figure(figsize=(7, 7)) # Formato quadrato 1:1
     fig.patch.set_facecolor('#02040f') 
-    ax  = fig.add_axes([0.06, 0.04, 0.91, 0.93])
-    # Lo sfondo della mappa deve essere Midnight Blue per blended imm2
-    ax.set_facecolor('#1A2238') 
+    
+    # Riduciamo i margini a zero per far combaciare l'immagine ai bordi
+    ax  = fig.add_axes([0, 0, 1, 1]) 
+    ax.set_facecolor('#02040f') 
 
-    ax.set_xlim(-0.5, 9.5); ax.set_ylim(-0.5, 9.5)
-    ax.set_xticks(range(10)); ax.set_yticks(range(10))
-    # Griglia Matplotlib molto sottile, quasi invisibile (blending imm2 style)
-    ax.tick_params(colors='#8899aa', labelsize=8)
-    ax.grid(True, linestyle='-', linewidth=0.5, alpha=0.1, color='#FFFFFF')
+    # IMPORTANTE: Spegniamo la griglia di Matplotlib (usiamo quella dello sfondo)
+    ax.grid(False) 
+    ax.set_xticks([]); ax.set_yticks([]) # Nascondiamo i numeri degli assi
+    
+    ax.set_xlim(-0.5, 9.5)
+    ax.set_ylim(-0.5, 9.5)
 
-    # Carica la nuova immagine composita (CON CERCHI E NEON ALLEGGERITI INCLUSI)
     bg_path = "p_background.png"
     if os.path.exists(bg_path):
         import matplotlib.image as mpimg
-        # alpha=0.9 per lasciarla brillante
-        ax.imshow(mpimg.imread(bg_path), extent=[-0.5,9.5,-0.5,9.5], alpha=0.9, zorder=0)
-
+        img = mpimg.imread(bg_path)
+        # extent assicura che l'immagine copra esattamente le coordinate 0-9
+        ax.imshow(img, extent=[-0.5, 9.5, -0.5, 9.5], zorder=0)
+        
     # Posizione Cadetto (coordinate intere per stabilità)
     px, py = int(ss.pos[0]), int(ss.pos[1])
 
