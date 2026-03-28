@@ -8,66 +8,21 @@ import streamlit as st
 import streamlit.components.v1 as components
 import matplotlib.pyplot as plt
 from matplotlib.path import Path
-import matplotlib.transforms as transforms
+import matplotlib.transforms as transforms   # FIX: rimossa la doppia importazione (era anche come mtransforms)
 import random
 import pandas as pd
 import requests
 import base64
-import matplotlib.transforms as mtransforms
 from datetime import datetime
 import numpy as np
 import os, io
 from supabase import create_client, Client
 
-def applica_tema_interfaccia():
-    st.markdown("""
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap');
-
-        /* Sfondo Generale */
-        .stApp { background-color: #02040f !important; color: #8899aa; }
-
-        /* --- STILE BOTTONI UNIVERSALE --- */
-        div.stButton > button {
-            width: 100% !important;
-            background: rgba(13, 27, 75, 0.9) !important;
-            border: 1px solid #FFD700 !important;
-            color: #FFD700 !important;
-            font-family: 'Orbitron', sans-serif !important;
-            text-transform: uppercase !important;
-            letter-spacing: 1.5px !important;
-            border-radius: 2px !important;
-            padding: 15px !important;
-            transition: all 0.3s ease;
-        }
-
-        /* Effetto Titolo Bold e Testo Normale (simulato via CSS) */
-        div.stButton > button p {
-            font-weight: 700 !important;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
-        }
-
-        /* --- EFFETTO PULSING (Per bottoni critici) --- */
-        @keyframes pulse-gold {
-            0% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.7); }
-            70% { box-shadow: 0 0 0 15px rgba(255, 215, 0, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0); }
-        }
-
-        /* Classe speciale per bottoni di emergenza */
-        .stButton.pulsing > button {
-            animation: pulse-gold 2s infinite;
-            border-color: #FF4444 !important;
-            color: #FF4444 !important;
-        }
-
-        div.stButton > button:hover {
-            background: #1a0e3d !important;
-            box-shadow: 0 0 20px rgba(255, 215, 0, 0.5) !important;
-            transform: scale(1.01);
-        }
-    </style>
-    """, unsafe_allow_html=True)
+# ============================================================
+# FIX CRITICO: set_page_config DEVE essere la prima chiamata Streamlit
+# (spostato prima di qualsiasi st.markdown / st.warning)
+# ============================================================
+st.set_page_config(page_title="🚀 Space Web Dashboard", page_icon="🚀", layout="wide", initial_sidebar_state="collapsed")
 
 # Gestione moduli locali (con fallback per sicurezza)
 try:
@@ -77,6 +32,8 @@ try:
     from letters_numerology import name_total_number
     from numbers_numerology import life_path_number
 except ImportError:
+    # FIX: definita funzione fallback per play_sound_event
+    def play_sound_event(event): pass
     st.warning("⚠️ Alcuni moduli locali mancano.")
 
 # --- COSTANTI E CONFIGURAZIONE ---
@@ -85,8 +42,6 @@ MISSIONE_TESTO = (
     "mine, tempeste e quiz, passando per i 3 punti verdi\n"
     "per ottenere il riconoscimento del premio."
 )
-
-st.set_page_config(page_title="🚀 Space Web Dashboard", page_icon="🚀", layout="wide", initial_sidebar_state="collapsed")
 
 # --- INIZIO BLOCCO STILE IMM2 ---
 st.markdown("""
@@ -99,7 +54,7 @@ st.markdown("""
     /* Trasforma TUTTI i bottoni in stile "Cockpit Oro" (imm2) */
     div.stButton > button {
         background: linear-gradient(135deg, #0d1b4b 0%, #1a0e3d 100%) !important;
-        color: #FFD700 !important; /* Testo ORO */
+        color: #FFD700 !important;
         border: 1px solid #FFD700 !important;
         font-family: 'Orbitron', sans-serif !important;
         text-transform: uppercase !important;
@@ -235,15 +190,29 @@ h1 {
     margin-top: 1rem;
     padding-bottom: 2px;
 }
+
+/* Effetto pulsing per bottoni critici */
+@keyframes pulse-gold {
+    0% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.7); }
+    70% { box-shadow: 0 0 0 15px rgba(255, 215, 0, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0); }
+}
+.pulsing > div > button {
+    animation: pulse-gold 2s infinite;
+    border-color: #FF4444 !important;
+    color: #FF4444 !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
 # --- CONFIGURAZIONE API E DB ---
-REGOLO_API_KEY  = "sk-qVA5RxRXLZce9pjdfE1OlA"
+# FIX SICUREZZA: le chiavi vengono lette SOLO da variabili d'ambiente.
+# Impostare REGOLO_API_KEY, SUPABASE_URL e SUPABASE_KEY nell'ambiente prima di avviare.
+REGOLO_API_KEY  = os.environ.get("REGOLO_API_KEY", "")
 REGOLO_ENDPOINT = "https://api.regolo.ai/v1/chat/completions"
 REGOLO_MODEL    = "qwen3-8b"
-SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://ammjetjchtzhlugpbcuy.supabase.co")
-SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "sb_publishable_5zEqZVBXKoW3hmFogr7SWg_Y2pUUP-r")
+SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "")
 
 @st.cache_resource
 def get_supabase():
@@ -279,7 +248,7 @@ codes_p = [Path.MOVETO,Path.LINETO,Path.LINETO,Path.LINETO,Path.LINETO,Path.LINE
 astronave_path       = Path(transforms.Affine2D().rotate_deg(-45).transform(verts_p),  codes_p)
 astronave_nemica_path= Path(transforms.Affine2D().rotate_deg(135).transform(verts_p), codes_p)
 
-# Importazione dati corsi (gestione errore sintassi corsi.py riga 185)
+# Importazione dati corsi
 try:
     import corsi
     DOMANDE  = getattr(corsi, "DOMANDE", {})
@@ -289,6 +258,7 @@ except Exception as e:
     st.error(f"⚠️ Errore critico nel file corsi.py: {e}. Verificare la sintassi riga 185.")
     QUIZ_NOMI = {i: f"Quiz {i}" for i in range(1, 8)}
     DOMANDE   = {i: [] for i in range(1, 8)}
+    QUIZ_DATI = {}
 
 # Controllo e normalizzazione domande
 for i in range(1, 8):
@@ -319,8 +289,10 @@ def init_state():
         st.session_state.quiz_score       = 0
         st.session_state.quiz_msg         = ""
         st.session_state.sound_event      = ""
-        st.session_state.conteggio = []  
-        st.session_state.numerologia_shown = False # Flag per atesa numerologia
+        st.session_state.conteggio        = []
+        st.session_state.numerologia_shown = False
+        # FIX: direzione inizializzata in init_state (mancava)
+        st.session_state.direzione        = "N"
 
 init_state()
 
@@ -345,54 +317,16 @@ def aggiorna_punteggio(nome_utente, quale, valore):
     db_salva_utente(db.loc[idx].to_dict())
 
 def genera_frase_adams():
+    # FIX: bare except sostituito con except Exception
     try:
         r = requests.post(REGOLO_ENDPOINT,
             headers={"Authorization": f"Bearer {REGOLO_API_KEY}", "Content-Type": "application/json"},
             json={"model": REGOLO_MODEL, "messages":[{"role":"system","content":"Douglas Adams quote style. Short, cosmically absurd. Maximum 10 words."},{"role":"user","content":"Get cosmic phrase."}], "max_tokens":80,"temperature":0.90}, timeout=10)
         return r.json()["choices"][0]["message"]["content"].strip()
-    except:
+    except Exception:
         return "⏱️ Il tempo, come la voglia di muoversi, era già altrove."
 
-def schermata_login():
-    mostra_intro_arcade()
-    col1, col2, col3 = st.columns([1,2,1])
-    with col2:
-        st.markdown('<p class="subtitle">◈ NAVIGAZIONE COSMICA QUANTISTICA ◈</p>', unsafe_allow_html=True)
-        st.markdown("---")
-        nome = st.text_input("Identificativo Cadetto:", placeholder="▸ Inserisci nome...", label_visibility="collapsed", key="input_nome_login")
-        colA, colB = st.columns(2)
-        with colA:
-            # Bottone Primario Cockpit (kind="primary" supportato Streamlit >=1.35)
-            if st.button("🚀 ACCEDI",  width='stretch', key="btn_accedi"):
-                if nome.strip():
-                    if nome.strip().lower() == "adm":
-                        st.session_state.adm_pwd_step = True; st.rerun()
-                    else:
-                        st.session_state.nome = nome.strip()
-                        # Logica caricamento/nuova partita (semplificata mantenendo funzionalità)
-                        new_row = {"nome":nome.strip(),"ww":0,"energia":100}
-                        db_salva_utente(new_row)
-                        nuova_partita(nome.strip())
-                        st.rerun()
-        with colB:
-            if st.button("🔐 ADM", width='stretch', key="btn_admin_login"):
-                st.session_state.adm_pwd_step = True; st.rerun()
-
-    if st.session_state.get("adm_pwd_step"):
-        with col2:
-            pwd = st.text_input("🔑 Password ADM:", type="password", key="adm_pwd_input")
-            c1, c2b = st.columns(2)
-            with c1:
-                if st.button("✅ Conferma", key="adm_pwd_ok"):
-                    if pwd == "2099":
-                        st.session_state.adm_pwd_step = False; st.session_state.schermata = "admin"; st.rerun()
-                    else: st.error("❌ Password errata")
-            with c2b:
-                if st.button("✖ Annulla", key="adm_pwd_cancel"):
-                    st.session_state.adm_pwd_step = False; st.rerun()
-
 def mostra_testata_finale_arcade():
-    # Header minimal PRD 3.2.4 unificato
     title_hover = MISSIONE_TESTO.replace("\n","&#10;")
     st.markdown(
         f'<div title="{title_hover}" class="prd-header">'
@@ -402,7 +336,6 @@ def mostra_testata_finale_arcade():
         unsafe_allow_html=True)
 
 def mostra_intro_arcade():
-    # Intro Arcade mantenuta per branding imm2
     components.html("""
         <style>
           @keyframes swPulse {
@@ -440,14 +373,13 @@ def mostra_intro_arcade():
             requestAnimationFrame(draw);
           }
           requestAnimationFrame(draw);
-          // Audio Arcade mantenuto per imm2
         })();
         </script>""", height=250)
 
 # --- FUNZIONI DI SUPPORTO DI GIOCO ---
 def nuova_partita(nome):
     st.session_state.pos = [0, 0]
-    st.session_state.direzione = "N"  # <--- AGGIUNGI QUESTA RIGA PER LA ROTAZIONE
+    st.session_state.direzione = "N"
     st.session_state.w = 100
     st.session_state.scudo = 50
     st.session_state.l = [[random.randint(1,8),random.randint(1,8)] for _ in range(10)]
@@ -464,69 +396,50 @@ def nuova_partita(nome):
 def disegna_griglia_cockpit():
     ss = st.session_state
     
-    # 1. SETUP FIGURA (Unificato)
     fig = plt.figure(figsize=(7, 7), facecolor='#02040f')
-    # add_axes([0,0,1,1]) elimina i bordi bianchi
     ax = fig.add_axes([0, 0, 1, 1])
     ax.set_facecolor('#02040f')
     
-    # Pulizia assi
     ax.grid(False)
     ax.set_xticks([]); ax.set_yticks([])
     ax.set_xlim(-0.5, 9.5); ax.set_ylim(-0.5, 9.5)
 
-    # 2. CARICAMENTO SFONDO
     bg_path = "p_background.png"
     if os.path.exists(bg_path):
         import matplotlib.image as mpimg
         try:
             img = mpimg.imread(bg_path)
             ax.imshow(img, extent=[-0.5, 9.5, -0.5, 9.5], zorder=0)
-        except:
+        except Exception:
             pass
 
-    # 3. LOGICA ROTAZIONE
-    # Recuperiamo la direzione (default Nord)
     direzione = ss.get('direzione', 'N')
     angoli = {'N': 0, 'E': -90, 'S': -180, 'O': -270}
     angolo_deg = angoli.get(direzione, 0)
-    
-    # Creiamo la trasformazione per la rotazione
-    import matplotlib.transforms as mtransforms
-    t = mtransforms.Affine2D().rotate_deg(angolo_deg)
+    t = transforms.Affine2D().rotate_deg(angolo_deg)
 
-    # 4. COORDINATE
     px, py = int(ss.pos[0]), int(ss.pos[1])
     enx, eny = int(ss.pos_nemica[0]), int(ss.pos_nemica[1])
 
-    # 5. DISEGNO ELEMENTI (Ostacoli e Bonus)
     for p in ss.l: 
         ax.scatter(p[0], p[1], s=80, color='#FF4444', alpha=0.6, zorder=3) 
     for p in ss.q: 
         ax.scatter(p[0], p[1], s=100, color='#00FF88', alpha=0.8, edgecolors='white', zorder=3)
 
-    # 6. ESPLOSIONI
-    # Verifichiamo se c'è un'esplosione attiva nelle coordinate del nemico
     if any(list(e) == [enx, eny] for e in ss.get("esplosione", [])):
         ax.scatter(enx, eny, s=500, color='hotpink', alpha=0.5, zorder=4, edgecolors='white', linewidth=2)
 
-    # 7. NAVE NEMICA
     ax.scatter(enx, eny, marker=astronave_nemica_path, s=300, color='#F00', alpha=0.8, zorder=5) 
-    
-    # 8. TUA NAVICELLA (Con Rotazione Applicata!)
-    # Usiamo .transformed(t) per orientare il marker
     ax.scatter(px, py, marker=astronave_path.transformed(t), 
                s=450, color='#FFFFFF', edgecolor='#FFD700', linewidth=1.2, zorder=6)
 
-    # 9. SCUDO (Se attivo)
     if ss.scudo > 0:
         alpha_scudo = max(0.1, min(0.6, ss.scudo/100))
         shield = plt.Circle((px, py), 0.55, fill=False, edgecolor='#4499ff', 
                             linewidth=2, alpha=alpha_scudo, zorder=7)
         ax.add_patch(shield)
 
-    # 10. FINALIZZAZIONE
-    ax.invert_yaxis() # Nord in alto
+    ax.invert_yaxis()
     ax.set_aspect('equal')
     
     buf = io.BytesIO()
@@ -534,14 +447,52 @@ def disegna_griglia_cockpit():
     plt.close(fig)
     buf.seek(0)
     return buf    
-# --- SCHERMATE (Redesign Cyberpunk Cockpit) ---
+
+# --- SCHERMATE ---
+
+def schermata_login():
+    mostra_intro_arcade()
+    col1, col2, col3 = st.columns([1,2,1])
+    with col2:
+        st.markdown('<p class="subtitle">◈ NAVIGAZIONE COSMICA QUANTISTICA ◈</p>', unsafe_allow_html=True)
+        st.markdown("---")
+        nome = st.text_input("Identificativo Cadetto:", placeholder="▸ Inserisci nome...", label_visibility="collapsed", key="input_nome_login")
+        colA, colB = st.columns(2)
+        with colA:
+            # FIX: rimosso width='stretch' (non supportato da st.button)
+            if st.button("🚀 ACCEDI", key="btn_accedi"):
+                if nome.strip():
+                    if nome.strip().lower() == "adm":
+                        st.session_state.adm_pwd_step = True; st.rerun()
+                    else:
+                        st.session_state.nome = nome.strip()
+                        new_row = {"nome":nome.strip(),"ww":0,"energia":100}
+                        db_salva_utente(new_row)
+                        nuova_partita(nome.strip())
+                        st.rerun()
+        with colB:
+            if st.button("🔐 ADM", key="btn_admin_login"):
+                st.session_state.adm_pwd_step = True; st.rerun()
+
+    if st.session_state.get("adm_pwd_step"):
+        with col2:
+            pwd = st.text_input("🔑 Password ADM:", type="password", key="adm_pwd_input")
+            c1, c2b = st.columns(2)
+            with c1:
+                if st.button("✅ Conferma", key="adm_pwd_ok"):
+                    if pwd == "2099":
+                        # FIX: route admin riabilitata nel router — qui impostiamo la schermata
+                        st.session_state.adm_pwd_step = False; st.session_state.schermata = "admin"; st.rerun()
+                    else: st.error("❌ Password errata")
+            with c2b:
+                if st.button("✖ Annulla", key="adm_pwd_cancel"):
+                    st.session_state.adm_pwd_step = False; st.rerun()
 
 def schermata_quiz():
     ss = st.session_state
     mostra_testata_finale_arcade()
 
     if ss.quiz_tipo is None:
-        # Pulisci il vecchio CSS e usa le classi del nuovo tema Cockpit
         st.markdown('<div class="section-title">🎓 MODULI DI ADDESTRAMENTO AVANZATO</div>', unsafe_allow_html=True)
 
         nome_attuale = ss.get("nome","")
@@ -553,7 +504,6 @@ def schermata_quiz():
         quiz_info = getattr(_corsi, "QUIZ_DATI", {})
         df_utenti = ss.get("db", pd.DataFrame())
         cols = st.columns(3)
-        # Logo di default scientifico/grigio
         logo_default = "https://img.icons8.com/ios-filled/100/ffffff/science.png"
 
         for i, (q_id, info) in enumerate(quiz_info.items()):
@@ -561,9 +511,7 @@ def schermata_quiz():
                 nome_c = info.get("nome", "")
                 logo_c = info.get("logo", logo_default)
                 
-                # CONTROLLO DINAMICO SUL NOME (PRD/imm2 style)
                 if "coming soon" in nome_c.lower() or nome_c == "":
-                    # Card Coming Soon Sbiadita (Charcoal)
                     st.markdown(f"""
                         <div class="metric-box card-coming" style="height:350px;border-style:dashed;opacity:0.6;">
                             <div class="metric-label" style="text-align:center;">🕒 IN SVILUPPO</div>
@@ -574,7 +522,6 @@ def schermata_quiz():
                         </div>
                     """, unsafe_allow_html=True)
                 else:
-                    # Card Attiva (Midnight Blue) Cockpit Style
                     col_p = f"punteggio{q_id}"
                     n_utenti = 0
                     if not df_utenti.empty and col_p in df_utenti.columns:
@@ -593,37 +540,70 @@ def schermata_quiz():
                         </div>
                     """, unsafe_allow_html=True)
                     
-                    if st.button(f"ACCEDI AL TEST {q_id}",  width='stretch', key=f"qbtn_{q_id}"):
+                    # FIX: rimosso width='stretch' (non supportato)
+                    if st.button(f"ACCEDI AL TEST {q_id}", key=f"qbtn_{q_id}"):
                         ss.quiz_tipo = q_id
                         ss.quiz_idx = 0; ss.quiz_score = 0
                         st.rerun()
                         
         st.markdown("---")
-        if st.button("← Torna alla Plancia di Comando", width='stretch'): ss.schermata="gioco"; st.rerun()
+        # FIX: rimosso width='stretch'
+        if st.button("← Torna alla Plancia di Comando"): ss.schermata="gioco"; st.rerun()
         return
 
-    # LOGICA TEST IN CORSO (Design imm2 Cockpit)
     st.markdown('<div class="section-title">🎓 TEST DI ADDESTRAMENTO IN CORSO</div>', unsafe_allow_html=True)
-    # ... (Logica quiz invariata, ma bottoni ora styled Cockpit nel CSS) ...
+    # ... (Logica quiz invariata) ...
 
 def schermata_gioco():
-    # Layout Cockpit imm2 style su 3 colonne (Mappa, Status, Legenda)
     ss = st.session_state
     mostra_testata_finale_arcade()
+
+    # FIX CRITICO: esegui_mossa definita PRIMA di essere usata, e portata fuori
+    # dal blocco with col_status così è accessibile nel bottone VAI
+    def esegui_mossa(dx, dy):
+        # 1. CALCOLO CONSUMO QUADRATICO (ΔX² + ΔY²)
+        costo_energia = (dx**2) + (dy**2)
+    
+        if ss.w < costo_energia:
+            ss.msg = f"⚠️ ENERGIA INSUFFICIENTE per salto {dx},{dy}! Richiesti: {costo_energia} Qwat."
+            return
+
+        # 2. CALCOLO NUOVA POSIZIONE (Border-Safe 0-9)
+        ss.pos[0] = min(9, max(0, ss.pos[0] + dx))
+        ss.pos[1] = min(9, max(0, ss.pos[1] + dy))
+        ss.w -= costo_energia
+
+        # 3. MOVIMENTO NAVE NEMICA & ESPLOSIONI
+        ss.esplosione = [] 
+        if random.random() > 0.4:
+            if ss.pos_nemica[0] < ss.pos[0]: ss.pos_nemica[0] += 1
+            elif ss.pos_nemica[0] > ss.pos[0]: ss.pos_nemica[0] -= 1
+            if ss.pos_nemica[1] < ss.pos[1]: ss.pos_nemica[1] += 1
+            elif ss.pos_nemica[1] > ss.pos[1]: ss.pos_nemica[1] -= 1
+
+        if ss.pos == ss.pos_nemica:
+            ss.esplosione.append([ss.pos[0], ss.pos[1]])
+            danno = 20
+            ss.scudo -= danno
+            ss.msg = f"💥 IMPATTO DIRETTO! Persi {danno}% scudi."
+        else:
+            ss.msg = f"Salto completato. Consumo: {costo_energia} Qwat."
+
+        # 4. AGGIORNAMENTO CONTATORE
+        ss.cnt_mosse += 1
 
     col_mappa, col_status, col_legenda = st.columns([1.5, 1, 0.7])
 
     with col_mappa:
         st.markdown('<div class="section-title">🌌 VISTA SETTORE SOTTOSPAZIO</div>', unsafe_allow_html=True)
-        # Mappa Cockpit Geometrica imm2 style
         buf = disegna_griglia_cockpit()
-        st.image(buf, width='stretch')
+        # FIX: st.image non accetta width='stretch', usa use_container_width=True
+        st.image(buf, use_container_width=True)
         
         if ss.msg:
             st.markdown(f'<div class="msg-box" style="font-size:0.8rem; color:#AAA;">📡 LOG: {ss.msg}</div>', unsafe_allow_html=True)
 
     with col_status:
-        # --- DASHBOARD (Invariata per mantenere il tuo stile CSS) ---
         st.markdown('<div class="section-title">🚀 SHIP DASHBOARD OPERATIVA</div>', unsafe_allow_html=True)
         
         e_pct = max(0, min(100, ss.w))
@@ -649,76 +629,32 @@ def schermata_gioco():
         
         with col_go:
             st.markdown("<br>", unsafe_allow_html=True)
-            # Usiamo width='stretch' per il 2026
-            if st.button("VAI", key="btn_vai", width='stretch'):
-                
-                # --- LOGICA DI ORIENTAMENTO ---
-                # Se ti sposti più in orizzontale che in verticale
+            # FIX: rimosso width='stretch'; aggiunta la chiamata a esegui_mossa (mancava!)
+            if st.button("VAI", key="btn_vai"):
+                # Logica orientamento
                 if abs(dx_sel) >= abs(dy_sel) and dx_sel != 0:
-                    st.session_state.direzione = 'E' if dx_sel > 0 else 'O'
-                # Se ti sposti più in verticale (o se X è 0)
+                    ss.direzione = 'E' if dx_sel > 0 else 'O'
                 elif abs(dy_sel) > abs(dx_sel):
-                    st.session_state.direzione = 'S' if dy_sel > 0 else 'N'
-                # Nota: se entrambi sono 0, la direzione non cambia.
+                    ss.direzione = 'S' if dy_sel > 0 else 'N'
+                # FIX CRITICO: chiamata effettiva a esegui_mossa (era completamente assente)
+                esegui_mossa(dx_sel, dy_sel)
+                st.rerun()
 
-    # --- ESECUZIONE MOSSA ---
-    def esegui_mossa(dx, dy):
-        ss = st.session_state
-    
-        # 1. CALCOLO CONSUMO QUADRATICO (ΔX² + ΔY²)
-        costo_energia = (dx**2) + (dy**2)
-    
-        # Verifica se hai abbastanza energia per il salto
-        if ss.w < costo_energia:
-            ss.msg = f"⚠️ ENERGIA INSUFFICIENTE per salto {dx},{dy}! Richiesti: {costo_energia} Qwat."
-            return # Esce dalla funzione senza muovere la nave
-
-        # 2. CALCOLO NUOVA POSIZIONE (Border-Safe 0-9)
-        ss.pos[0] = min(9, max(0, ss.pos[0] + dx))
-        ss.pos[1] = min(9, max(0, ss.pos[1] + dy))
-    
-        # Sottrae l'energia dopo il salto confermato
-        ss.w -= costo_energia
-
-        # 3. MOVIMENTO NAVE NEMICA & ESPLOSIONI
-        ss.esplosione = [] 
-        # IA Nemica semplificata
-        if random.random() > 0.4:
-            if ss.pos_nemica[0] < ss.pos[0]: ss.pos_nemica[0] += 1
-            elif ss.pos_nemica[0] > ss.pos[0]: ss.pos_nemica[0] -= 1
-            if ss.pos_nemica[1] < ss.pos[1]: ss.pos_nemica[1] += 1
-            elif ss.pos_nemica[1] > ss.pos[1]: ss.pos_nemica[1] -= 1
-
-        # Controllo Collisione per Esplosione
-        if ss.pos == ss.pos_nemica:
-            ss.esplosione.append([ss.pos[0], ss.pos[1]])
-            danno = 20
-            ss.scudo -= danno
-            ss.msg = f"💥 IMPATTO DIRETTO! Persi {danno}% scudi."
-        else:
-            ss.msg = f"Salto completato. Consumo: {costo_energia} Qwat."
-
-        # 4. AGGIORNAMENTO CONTATORE
-        ss.cnt_mosse += 1 
-                
-        st.rerun()
-                
-        # --- SISTEMI PLANCIA (Aggiunto Pulsing al Logout o Nuova) ---
+        # FIX CRITICO: SISTEMI PLANCIA spostati DENTRO col_status (erano finiti
+        # dentro esegui_mossa per errore di indentazione — codice morto)
         st.markdown('<div class="section-title">▸ SISTEMI PLANCIA</div>', unsafe_allow_html=True)
         col_sA, col_sB, col_sC = st.columns(3)
         with col_sA:
-            if st.button("🎓 Quiz", width='stretch', key="btn_quiz"): ss.quiz_tipo=None; ss.schermata="quiz"; st.rerun()
+            # FIX: rimosso width='stretch'
+            if st.button("🎓 Quiz", key="btn_quiz"): ss.quiz_tipo=None; ss.schermata="quiz"; st.rerun()
         with col_sB:
-            # Effetto pulsing opzionale qui se vuoi evidenziare la nuova partita
-            if st.button("🔄 Nuova", width='stretch', key="btn_nuova"): nuova_partita(ss.nome); st.rerun()
+            if st.button("🔄 Nuova", key="btn_nuova"): nuova_partita(ss.nome); st.rerun()
         with col_sC:
-            # Applichiamo il pulsing al logout per renderlo visibile
             st.markdown('<div class="pulsing">', unsafe_allow_html=True)
-            if st.button("🚪 Logout", width='stretch', key="btn_logout"): ss.schermata="login"; st.session_state.nome=""; st.rerun()
+            if st.button("🚪 Logout", key="btn_logout"): ss.schermata="login"; st.session_state.nome=""; st.rerun()
             st.markdown('</div>', unsafe_allow_html=True)
 
     with col_legenda:
-        # --- LEGENDA (Invariata) ---
         st.markdown('<div class="section-title">&#9656; LEGENDA OPERATIVA</div>', unsafe_allow_html=True)
         st.markdown(f"""<div style="font-family:'Share Tech Mono',monospace;color:#8899bb;line-height:2; font-size:0.75rem; border: 1px solid rgba(100,160,255,0.1); padding: 10px; border-radius: 4px; background: rgba(0,5,25,0.4);">
             <span style="color:#ff3311; font-size:1.1rem;">●</span> Ostacolo (-20)<br>
@@ -733,13 +669,22 @@ def schermata_gioco():
     play_sound_event(ss.sound_event)
     ss.sound_event = ""
 
+def schermata_admin():
+    ss = st.session_state
+    mostra_testata_finale_arcade()
+    st.markdown('<div class="section-title">🔐 PANNELLO AMMINISTRATORE</div>', unsafe_allow_html=True)
+    st.info("Pannello admin attivo. Aggiungi qui le funzionalità di gestione.")
+    if st.button("← Logout Admin"):
+        ss.schermata = "login"
+        st.rerun()
+
 # ============================================================
-# ROUTER (imm2 compliant)
+# ROUTER
 # ============================================================
 schermata_attuale = st.session_state.get("schermata","login")
-if   schermata_attuale == "login":       schermata_login()
-# elif schermata_attuale == "admin":       schermata_admin() # Ometto admin per brevità
-elif schermata_attuale == "quiz":        schermata_quiz()
-elif schermata_attuale == "gioco":       schermata_gioco()
-#elif schermata_attuale == "portafoglio": Portafoglio() # Ometto portafoglio per brevità
-#elif schermata_attuale == "numerologia_app": Numerologia() # Ometto numerologia per brevità
+if   schermata_attuale == "login":   schermata_login()
+elif schermata_attuale == "admin":   schermata_admin()   # FIX: route admin riabilitata
+elif schermata_attuale == "quiz":    schermata_quiz()
+elif schermata_attuale == "gioco":   schermata_gioco()
+#elif schermata_attuale == "portafoglio": Portafoglio()
+#elif schermata_attuale == "numerologia_app": Numerologia()
