@@ -462,6 +462,17 @@ def nuova_partita(nome):
 
 # --- TROVA E SOSTITUISCI QUESTA FUNZIONE (circa riga 400) ---
 def disegna_griglia_cockpit():
+
+    # Mappa la lettera della direzione in gradi
+    angoli = {'N': 0, 'E': -90, 'S': -180, 'O': -270}
+    angolo_deg = angoli.get(st.session_state.get('direzione', 'N'), 0)
+
+    # Applica la rotazione al marker della tua nave
+    t = mtransforms.Affine2D().rotate_deg(angolo_deg)
+    
+    # Disegna la nave (se astronave_path è un oggetto Path)
+    ax.scatter(px, py, marker=astronave_path.transformed(t), s=450, color='#FFFFFF', edgecolor='#FFD700', zorder=6)
+    
     ss = st.session_state
     fig = plt.figure(figsize=(7, 7))
     # Usiamo add_axes([0,0,1,1]) per eliminare ogni bordo bianco e far combaciare lo sfondo
@@ -621,25 +632,36 @@ def schermata_gioco():
         
         st.markdown(f'<div class="metric-box"><div class="metric-label">📍 COORDINATE</div><div class="metric-value">({ss.pos[0]}, {ss.pos[1]})</div></div>', unsafe_allow_html=True)
         
-        # --- SISTEMA NAVIGAZIONE (Modificato per la rotazione) ---
-        st.markdown('<div class="section-title">🕹 SISTEMA NAVIGAZIONE</div>', unsafe_allow_html=True)
+st.markdown('<div class="section-title">🕹 SISTEMA NAVIGAZIONE</div>', unsafe_allow_html=True)
         col_dx, col_dy, col_go = st.columns([1.5, 1.5, 1])
+        
         with col_dx:
-            dx_sel = st.selectbox("ΔX", options=[-3,-2,-1,0,+1,+2,+3], format_func=lambda v: f"+{v}" if v>0 else str(v), key="sel_dx")
+            dx_sel = st.selectbox("ΔX", options=[-3,-2,-1,0,+1,+2,+3], 
+                                  format_func=lambda v: f"+{v}" if v>0 else str(v), key="sel_dx")
         with col_dy:
-            dy_sel = st.selectbox("ΔY", options=[-3,-2,-1,0,+1,+2,+3], format_func=lambda v: f"+{v}" if v>0 else str(v), key="sel_dy")
+            dy_sel = st.selectbox("ΔY", options=[-3,-2,-1,0,+1,+2,+3], 
+                                  format_func=lambda v: f"+{v}" if v>0 else str(v), key="sel_dy")
+        
         with col_go:
             st.markdown("<br>", unsafe_allow_html=True)
+            # Usiamo width='stretch' per il 2026
             if st.button("VAI", key="btn_vai", width='stretch'):
-                # LOGICA ROTAZIONE: Determiniamo la direzione basandoci sullo spostamento maggiore
-                if abs(dx_sel) >= abs(dy_sel) and dx_sel != 0:
-                    ss.direzione = 'E' if dx_sel > 0 else 'O'
-                elif abs(dy_sel) > abs(dx_sel):
-                    ss.direzione = 'S' if dy_sel > 0 else 'N'
                 
-                # esegui_mossa(dx_sel, dy_sel) # La tua logica originale
-                st.rerun()
+                # --- LOGICA DI ORIENTAMENTO ---
+                # Se ti sposti più in orizzontale che in verticale
+                if abs(dx_sel) >= abs(dy_sel) and dx_sel != 0:
+                    st.session_state.direzione = 'E' if dx_sel > 0 else 'O'
+                # Se ti sposti più in verticale (o se X è 0)
+                elif abs(dy_sel) > abs(dx_sel):
+                    st.session_state.direzione = 'S' if dy_sel > 0 else 'N'
+                # Nota: se entrambi sono 0, la direzione non cambia.
 
+                # --- ESECUZIONE MOSSA ---
+                # Qui chiami la tua funzione che aggiorna ss.pos[0] e ss.pos[1]
+                # esegui_mossa(dx_sel, dy_sel) 
+                
+                st.rerun()
+                
         # --- SISTEMI PLANCIA (Aggiunto Pulsing al Logout o Nuova) ---
         st.markdown('<div class="section-title">▸ SISTEMI PLANCIA</div>', unsafe_allow_html=True)
         col_sA, col_sB, col_sC = st.columns(3)
