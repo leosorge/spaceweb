@@ -24,17 +24,28 @@ from supabase import create_client, Client
 # ============================================================
 st.set_page_config(page_title="🚀 Space Web Dashboard", page_icon="🚀", layout="wide", initial_sidebar_state="collapsed")
 
-# Gestione moduli locali (con fallback per sicurezza)
+# Gestione moduli locali — import separati così il fallback di uno non blocca gli altri
+try:
+    from suoni import play_sound_event
+except ImportError:
+    def play_sound_event(event): pass  # fallback silenzioso solo se suoni.py manca
+
 try:
     from portafoglio import Portafoglio
-    from suoni import play_sound_event
+except ImportError:
+    Portafoglio = None
+
+try:
     from numerologia_app import Numerologia
+except ImportError:
+    Numerologia = None
+
+try:
     from letters_numerology import name_total_number
     from numbers_numerology import life_path_number
 except ImportError:
-    # FIX: definita funzione fallback per play_sound_event
-    def play_sound_event(event): pass
-    st.warning("⚠️ Alcuni moduli locali mancano.")
+    name_total_number = None
+    life_path_number = None
 
 # --- COSTANTI E CONFIGURAZIONE ---
 MISSIONE_TESTO = (
@@ -597,8 +608,7 @@ def schermata_gioco():
     with col_mappa:
         st.markdown('<div class="section-title">🌌 VISTA SETTORE SOTTOSPAZIO</div>', unsafe_allow_html=True)
         buf = disegna_griglia_cockpit()
-        # FIX: st.image non accetta width='stretch', usa width=True
-        st.image(buf, width=True)
+        st.image(buf, use_container_width=True)
         
         if ss.msg:
             st.markdown(f'<div class="msg-box" style="font-size:0.8rem; color:#AAA;">📡 LOG: {ss.msg}</div>', unsafe_allow_html=True)
