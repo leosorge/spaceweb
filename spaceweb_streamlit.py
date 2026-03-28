@@ -239,10 +239,9 @@ def db_carica() -> pd.DataFrame:
         st.warning(f"⚠️ Supabase non raggiungibile: {e}")
     # Fallback DataFrame se Supabase fallisce
     return pd.DataFrame({
-        "nome": ["xyx"], "data1": ["00/00/00"], "punteggio1": [0],
-        "data2": ["00/00/00"], "punteggio2": [0], "data3": ["00/00/00"], "punteggio3": [0],
-        "data4": ["00/00/00"], "punteggio4": [0], "data5": ["00/00/00"], "punteggio5": [0],
-        "data6": ["00/00/00"], "punteggio6": [0], "data7": ["00/00/00"], "punteggio7": [0],
+        "nome": ["xyx"],
+        **{f"data{i}": ["00/00/00"] for i in range(1, 10)},
+        **{f"punteggio{i}": [0] for i in range(1, 10)},
         "ww": [0], "energia": [100]
     })
 
@@ -309,23 +308,44 @@ init_state()
 
 # Funzioni supporto dati
 def aggiorna_punteggio(nome_utente, quale, valore):
+    """Salva il punteggio di un quiz su Supabase.
+    FIX: supporta quiz 1..9, converte tipi numpy, aggiunge data modifica.
+    """
     db   = st.session_state.db
     mask = db["nome"].str.lower() == nome_utente.lower()
+    oggi = datetime.today().strftime("%d/%m/%y")
+
+    # Crea utente se non esiste (con tutte le colonne 1..9)
     if not mask.any():
-        nuova = pd.DataFrame([{"nome": nome_utente, "ww": 0, "energia": 100, **{f"punteggio{i}": 0 for i in range(1,8)}}])
+        nuova = pd.DataFrame([{
+            "nome": nome_utente, "ww": 0, "energia": 100,
+            **{f"punteggio{i}": 0 for i in range(1, 10)},
+            **{f"data{i}": "00/00/00" for i in range(1, 10)},
+        }])
         st.session_state.db = pd.concat([db, nuova], ignore_index=True)
         db   = st.session_state.db
         mask = db["nome"].str.lower() == nome_utente.lower()
-    
+
+    # Assicura che le colonne esistano (quiz 1..9)
+    for i in range(1, 10):
+        if f"punteggio{i}" not in db.columns: db[f"punteggio{i}"] = 0
+        if f"data{i}"      not in db.columns: db[f"data{i}"]      = "00/00/00"
+
     col_p = f"punteggio{quale}"
-    if col_p not in db.columns: db[col_p] = 0
-    db.loc[mask, col_p] = valore
-    
+    col_d = f"data{quale}"
+    db.loc[mask, col_p] = int(valore)   # FIX: forza int Python (no numpy)
+    db.loc[mask, col_d] = oggi
+
     idx   = db.index[mask][0]
-    total = sum(int(db.at[idx, f"punteggio{i}"]) for i in range(1,8) if f"punteggio{i}" in db.columns)
+    # FIX: somma su 1..9 (non solo 1..7)
+    total = sum(int(db.at[idx, f"punteggio{i}"]) for i in range(1, 10) if f"punteggio{i}" in db.columns)
     db.at[idx, "ww"] = total
     st.session_state.db = db
-    db_salva_utente(db.loc[idx].to_dict())
+
+    # FIX: converte tutti i valori numpy in tipi Python nativi prima dell'upsert
+    row_raw = db.loc[idx].to_dict()
+    row = {k: (int(v) if hasattr(v, "item") else v) for k, v in row_raw.items()}
+    db_salva_utente(row)
 
 def genera_frase_adams():
     # FIX: bare except sostituito con except Exception
@@ -341,91 +361,140 @@ def genera_frase_adams():
 # FIX SUONI: components.html(height=1) viene ignorato da Streamlit.
 # Usiamo st.markdown per iniettare <script> direttamente nel DOM.
 # ============================================================
+def _setup_audio_engine():
+    """
+    Monta UN SOLO iframe audio persistente che:
+    1. Mostra un bottone "🔊 Attiva Audio" per sbloccare l'AudioContext (obbligatorio browser)
+    2. Ascolta postMessage con {sound: "bonus"|"warn"|...} e suona
+    Chiamare una volta sola all'inizio della schermata gioco.
+    """
+    components.html("""
+    <style>
+      body { margin:0; padding:0; background:transparent; font-family:monospace; }
+      button {
+        background: rgba(13,27,75,0.95);
+        color: #FFD700;
+        border: 1px solid #FFD700;
+        padding: 4px 12px;
+        font-size: 0.7rem;
+        letter-spacing: 1px;
+        cursor: pointer;
+        border-radius: 2px;
+        width: 100%;
+      }
+      button:hover { background: #1a0e3d; }
+      button.active { color: #00ff88; border-color: #00ff88; }
+    </style>
+    <button id="btn" onclick="unlock()">🔇 AUDIO OFF — clicca per attivare</button>
+    <script>
+    var ac = null;
+
+    function unlock() {
+      if (!ac) {
+        ac = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      ac.resume().then(function() {
+        document.getElementById("btn").textContent = "🔊 AUDIO ON";
+        document.getElementById("btn").classList.add("active");
+        document.getElementById("btn").onclick = function() {
+          ac.suspend();
+          document.getElementById("btn").textContent = "🔇 AUDIO OFF — clicca per attivare";
+          document.getElementById("btn").classList.remove("active");
+          document.getElementById("btn").onclick = unlock;
+        };
+      });
+    }
+
+    var SOUNDS = {
+      bonus:    {wave:"sine",     freq:880,  dur:0.55, vol:0.18},
+      danger:   {wave:"sawtooth", freq:180,  dur:0.60, vol:0.30},
+      warn:     {wave:"square",   freq:440,  dur:0.45, vol:0.15},
+      stealth:  {wave:"sine",     freq:220,  dur:0.40, vol:0.25},
+      gameover: {wave:"sawtooth", freq:80,   dur:0.70, vol:0.60},
+      victory:  {wave:"sine",     freq:1047, dur:0.60, vol:0.50},
+    };
+
+    function playSimple(s) {
+      if (!ac || ac.state !== "running") return;
+      var p = SOUNDS[s];
+      if (!p) return;
+      var o = ac.createOscillator(), g = ac.createGain();
+      o.type = p.wave; o.frequency.value = p.freq;
+      g.gain.setValueAtTime(p.vol, ac.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + p.dur);
+      o.connect(g); g.connect(ac.destination);
+      o.start(); o.stop(ac.currentTime + p.dur);
+    }
+
+    function playCrackle(vol, density, count, interval, len) {
+      if (!ac || ac.state !== "running") return;
+      var t = ac.currentTime;
+      for (var i = 0; i < count; i++) {
+        (function(t0) {
+          var buf = ac.createBuffer(1, Math.floor(ac.sampleRate * len), ac.sampleRate);
+          var data = buf.getChannelData(0);
+          for (var j = 0; j < data.length; j++) { data[j] = Math.random() < density ? (Math.random()*2-1) : 0; }
+          var src = ac.createBufferSource(), g = ac.createGain();
+          src.buffer = buf; g.gain.setValueAtTime(vol, t0); g.gain.linearRampToValueAtTime(0.0001, t0+len);
+          src.connect(g); g.connect(ac.destination); src.start(t0); src.stop(t0+len);
+        })(t);
+        t += interval;
+      }
+    }
+
+    function playAlert() {
+      if (!ac || ac.state !== "running") return;
+      playCrackle(0.30, 0.05, 20, 0.5, 0.35);
+      var osc = ac.createOscillator(), og = ac.createGain();
+      osc.type = "sawtooth"; osc.frequency.value = 55;
+      og.gain.setValueAtTime(0.0001, ac.currentTime); og.gain.linearRampToValueAtTime(0.12, ac.currentTime+0.5);
+      og.gain.setValueAtTime(0.12, ac.currentTime+9.0); og.gain.linearRampToValueAtTime(0.0001, ac.currentTime+10.0);
+      osc.connect(og); og.connect(ac.destination); osc.start(); osc.stop(ac.currentTime+10.0);
+    }
+
+    function playExplosion() {
+      if (!ac || ac.state !== "running") return;
+      playCrackle(0.60, 0.15, 6, 0.5, 0.4);
+      var osc = ac.createOscillator(), og = ac.createGain();
+      osc.type = "sawtooth";
+      osc.frequency.setValueAtTime(120, ac.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(30, ac.currentTime+2.5);
+      og.gain.setValueAtTime(0.0001, ac.currentTime); og.gain.linearRampToValueAtTime(0.65, ac.currentTime+0.05);
+      og.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime+3.0);
+      osc.connect(og); og.connect(ac.destination); osc.start(); osc.stop(ac.currentTime+3.0);
+    }
+
+    // Ascolta i messaggi dalla pagina Streamlit principale
+    window.addEventListener("message", function(e) {
+      var snd = e.data && e.data.sound;
+      if (!snd) return;
+      if      (snd === "alert")     playAlert();
+      else if (snd === "explosion") playExplosion();
+      else                          playSimple(snd);
+    });
+    </script>
+    """, height=32, key="audio_engine")
+
+
 def _inject_sound(event: str):
+    """Manda un postMessage all'iframe audio engine."""
     if not event:
         return
-    if event == "alert":
-        js = """
-        const ac = new (window.AudioContext || window.webkitAudioContext)();
-        ac.resume().then(() => {
-          function crackle(t0, len) {
-            const buf = ac.createBuffer(1, Math.floor(ac.sampleRate * len), ac.sampleRate);
-            const data = buf.getChannelData(0);
-            for (let i = 0; i < data.length; i++) { data[i] = Math.random() < 0.05 ? (Math.random()*2-1) : 0; }
-            const src = ac.createBufferSource(), g = ac.createGain();
-            src.buffer = buf;
-            g.gain.setValueAtTime(0.0001, t0); g.gain.linearRampToValueAtTime(0.30, t0+0.05);
-            g.gain.setValueAtTime(0.30, t0+len-0.3); g.gain.linearRampToValueAtTime(0.0001, t0+len);
-            src.connect(g); g.connect(ac.destination); src.start(t0); src.stop(t0+len);
-          }
-          let t = ac.currentTime;
-          for (let i = 0; i < 20; i++) { crackle(t, 0.35); t += 0.5; }
-          const osc = ac.createOscillator(), og = ac.createGain();
-          osc.type = "sawtooth"; osc.frequency.value = 55;
-          og.gain.setValueAtTime(0.0001, ac.currentTime); og.gain.linearRampToValueAtTime(0.12, ac.currentTime+0.5);
-          og.gain.setValueAtTime(0.12, ac.currentTime+9.0); og.gain.linearRampToValueAtTime(0.0001, ac.currentTime+10.0);
-          osc.connect(og); og.connect(ac.destination); osc.start(ac.currentTime); osc.stop(ac.currentTime+10.0);
-        });
-        """
-    elif event == "explosion":
-        js = """
-        const ac = new (window.AudioContext || window.webkitAudioContext)();
-        ac.resume().then(() => {
-          function crackle(t0, len) {
-            const buf = ac.createBuffer(1, Math.floor(ac.sampleRate * len), ac.sampleRate);
-            const data = buf.getChannelData(0);
-            for (let i = 0; i < data.length; i++) { data[i] = Math.random() < 0.15 ? (Math.random()*2-1) : 0; }
-            const src = ac.createBufferSource(), g = ac.createGain();
-            src.buffer = buf; g.gain.setValueAtTime(0.60, t0); g.gain.linearRampToValueAtTime(0.0001, t0+len);
-            src.connect(g); g.connect(ac.destination); src.start(t0); src.stop(t0+len);
-          }
-          let t = ac.currentTime;
-          for (let i = 0; i < 6; i++) { crackle(t, 0.4); t += 0.5; }
-          const osc = ac.createOscillator(), og = ac.createGain();
-          osc.type = "sawtooth"; osc.frequency.setValueAtTime(120, ac.currentTime);
-          osc.frequency.exponentialRampToValueAtTime(30, ac.currentTime+2.5);
-          og.gain.setValueAtTime(0.0001, ac.currentTime); og.gain.linearRampToValueAtTime(0.65, ac.currentTime+0.05);
-          og.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime+3.0);
-          osc.connect(og); og.connect(ac.destination); osc.start(ac.currentTime); osc.stop(ac.currentTime+3.0);
-        });
-        """
-    else:
-        sound_map = {
-            "bonus":    ("sine",     880, 0.18, 0.55),
-            "danger":   ("sawtooth", 180, 0.30, 0.60),
-            "warn":     ("square",   440, 0.15, 0.45),
-            "stealth":  ("sine",     220, 0.25, 0.40),
-            "gameover": ("sawtooth",  80, 0.60, 0.70),
-            "victory":  ("sine",    1047, 0.50, 0.60),
-        }
-        if event not in sound_map:
-            return
-        wave, freq, dur, vol = sound_map[event]
-        js = f"""
-        const ac = new (window.AudioContext || window.webkitAudioContext)();
-        ac.resume().then(() => {{
-          const o = ac.createOscillator(), g = ac.createGain();
-          o.type = "{wave}"; o.frequency.value = {freq};
-          g.gain.setValueAtTime({vol}, ac.currentTime);
-          g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + {dur});
-          o.connect(g); g.connect(ac.destination);
-          o.start(); o.stop(ac.currentTime + {dur});
-        }});
-        """
-    # Streamlit ignora height=0 e height=1. 
-    # Usiamo height=2 con iframe nascosto tramite CSS nel parent — 
-    # il JS viene eseguito dentro l'iframe sandbox prima che venga collassato.
-    html_audio = f"""
-    <style>html,body{{margin:0;padding:0;overflow:hidden;}}</style>
+    # Trova l'iframe audio engine e manda il messaggio tramite la pagina parent
+    components.html(f"""
     <script>
-    (function(){{
-      try {{
-        {js}
-      }} catch(e) {{ console.warn("audio",e); }}
-    }})();
+    // Invia a tutti gli iframe della pagina (incluso audio_engine)
+    var frames = window.parent.document.querySelectorAll("iframe");
+    frames.forEach(function(f) {{
+      try {{ f.contentWindow.postMessage({{sound: "{event}"}}, "*"); }} catch(e) {{}}
+    }});
     </script>
-    """
-    components.html(html_audio, height=2)
+    """, height=0)
+
+
+def starfleet_msg(testo: str):
+    """Invia un messaggio nella finestra COMUNICAZIONI DA STARFLEET."""
+    st.session_state.oracolo_txt = testo
 
 def mostra_testata_finale_arcade():
     title_hover = MISSIONE_TESTO.replace("\n","&#10;")
@@ -718,7 +787,11 @@ def schermata_quiz():
         else:
             esito = "FALLITO";    colore_esito = "#ff4444"; ss.sound_event = "danger"
 
-        aggiorna_punteggio(ss.nome, q_id, score)
+        # FIX: salva il punteggio una sola volta (non ad ogni rerun)
+        chiave_salvato = f"quiz_{q_id}_salvato_{ss.nome}"
+        if not ss.get(chiave_salvato):
+            aggiorna_punteggio(ss.nome, q_id, score)
+            ss[chiave_salvato] = True
 
         st.markdown(f"""
         <div class="metric-box" style="text-align:center;padding:20px;">
@@ -735,6 +808,9 @@ def schermata_quiz():
         col_r1, col_r2 = st.columns(2)
         with col_r1:
             if st.button("Riprova", key="quiz_riprova"):
+                # FIX: resetta il flag di salvataggio così un nuovo tentativo può salvare
+                chiave_salvato = f"quiz_{q_id}_salvato_{ss.nome}"
+                if chiave_salvato in ss: del ss[chiave_salvato]
                 ss.quiz_idx = 0; ss.quiz_score = 0; ss.quiz_msg = ""; st.rerun()
         with col_r2:
             if st.button("Torna ai corsi", key="quiz_back_fine"):
@@ -744,40 +820,124 @@ def schermata_quiz():
 def schermata_gioco():
     ss = st.session_state
     mostra_testata_finale_arcade()
+    _setup_audio_engine()   # Monta l'iframe audio persistente con bottone attiva/disattiva
 
     # FIX CRITICO: esegui_mossa definita PRIMA di essere usata, e portata fuori
     # dal blocco with col_status così è accessibile nel bottone VAI
     def esegui_mossa(dx, dy):
-        # 1. CALCOLO CONSUMO QUADRATICO (ΔX² + ΔY²)
-        costo_energia = (dx**2) + (dy**2)
-    
-        if ss.w < costo_energia:
-            ss.msg = f"⚠️ ENERGIA INSUFFICIENTE per salto {dx},{dy}! Richiesti: {costo_energia} Qwat."
-            return
+        pos = ss.pos
+        nx, ny = pos[0] + dx, pos[1] + dy
+        msg = ""
 
-        # 2. CALCOLO NUOVA POSIZIONE (Border-Safe 0-9)
-        ss.pos[0] = min(9, max(0, ss.pos[0] + dx))
-        ss.pos[1] = min(9, max(0, ss.pos[1] + dy))
-        ss.w -= costo_energia
-
-        # 3. MOVIMENTO NAVE NEMICA & ESPLOSIONI
-        ss.esplosione = [] 
-        if random.random() > 0.4:
-            if ss.pos_nemica[0] < ss.pos[0]: ss.pos_nemica[0] += 1
-            elif ss.pos_nemica[0] > ss.pos[0]: ss.pos_nemica[0] -= 1
-            if ss.pos_nemica[1] < ss.pos[1]: ss.pos_nemica[1] += 1
-            elif ss.pos_nemica[1] > ss.pos[1]: ss.pos_nemica[1] -= 1
-
-        if ss.pos == ss.pos_nemica:
-            ss.esplosione.append([ss.pos[0], ss.pos[1]])
+        if not (0 <= nx <= 9 and 0 <= ny <= 9):
+            msg = "⚠️ Fuori dai bordi galattici!"
+        elif [nx, ny] in ss.l:
             danno = 20
-            ss.scudo -= danno
-            ss.msg = f"💥 IMPATTO DIRETTO! Persi {danno}% scudi."
+            if ss.scudo > 0:
+                assorbito = min(ss.scudo, danno // 2)
+                ss.scudo -= assorbito
+                danno -= assorbito
+                msg = f"🔴 Ostacolo! Scudo assorbe {assorbito} danni. -{danno} energia."
+            else:
+                msg = f"🔴 Ostacolo! -{danno} energia (scudo esaurito)."
+            ss.w -= danno
         else:
-            ss.msg = f"Salto completato. Consumo: {costo_energia} Qwat."
+            costo = dx**2 + dy**2
+            if ss.w < costo:
+                msg = f"⚡ Energia insufficiente! Serve {costo}, hai {ss.w}."
+            else:
+                ss.pos = [nx, ny]
+                ss.w -= costo
+                if [nx, ny] in ss.q:
+                    ss.w += 20; ss.scudo = min(100, ss.scudo + 10)
+                    ss.q.remove([nx, ny])
+                    msg += "🟢 Bonus! +20 energia, +10 scudo. "
+                    ss.sound_event = "bonus"
+                if [nx, ny] in ss.s:
+                    ss.w -= 15; ss.s.remove([nx, ny])
+                    msg += "⚫ Campo stealth! -15 energia. "
+                    ss.sound_event = "stealth"
 
-        # 4. AGGIORNAMENTO CONTATORE
-        ss.cnt_mosse += 1
+                # Muovi nemico
+                ss.cnt_mosse += 1
+                if ss.cnt_mosse % 4 == 0:
+                    ss.pos_nemica = [random.randint(0,9), random.randint(0,9)]
+                else:
+                    direzioni = [(0,1),(1,1),(1,0),(0,-1),(-1,-1),(-1,0)]
+                    random.shuffle(direzioni)
+                    for ddx, ddy in direzioni:
+                        enx = ss.pos_nemica[0]+ddx; eny = ss.pos_nemica[1]+ddy
+                        if 0 <= enx <= 9 and 0 <= eny <= 9:
+                            ss.pos_nemica = [enx, eny]; break
+
+                if ss.pos_nemica == ss.pos:
+                    danno_nemico = 30
+                    if ss.scudo > 0:
+                        assorbito = min(ss.scudo, danno_nemico // 2)
+                        ss.scudo -= assorbito; danno_nemico -= assorbito
+                        msg += f"💥 Nave nemica! Scudo assorbe {assorbito}. -{danno_nemico} energia. "
+                    else:
+                        msg += f"💥 Catturato! -{danno_nemico} energia. "
+                    ss.w -= danno_nemico
+                    ss.esplosione = [list(ss.pos)]
+                    ss.sound_event = "explosion"
+                else:
+                    ss.esplosione = []
+
+                # ── TEMPESTA MAGNETICA (2 fasi) ──────────────────────────────
+                if ss.get("tempesta_pending") is not None:
+                    ex, ey = ss.tempesta_pending
+                    forma = random.choice(["punto", "croce"])
+                    if forma == "punto":
+                        zone = [(ex, ey)]
+                    else:
+                        zone = [(ex,ey),(ex-1,ey),(ex+1,ey),(ex,ey-1),(ex,ey+1)]
+                        zone = [(x,y) for x,y in zone if 0<=x<=9 and 0<=y<=9]
+                    if tuple(ss.pos) in zone:
+                        if ss.scudo > 0:
+                            assorbito = min(ss.scudo, ss.w // 4)
+                            ss.scudo -= assorbito; ss.w = ss.w // 2 + assorbito // 2
+                            msg += "💥 Tempesta magnetica! Scudo parzialmente assorbe. "
+                        else:
+                            ss.w = ss.w // 2
+                            msg += "💥 Tempesta magnetica! Energia dimezzata! "
+                        ss.sound_event = "danger"
+                    ss.tempesta_pending = None
+                elif random.random() < 0.30:
+                    ex, ey = random.randint(0,9), random.randint(0,9)
+                    ss.tempesta_pending = (ex, ey)
+                    starfleet_msg(f"⭐ ATTENZIONE! Tempesta magnetica in arrivo su ({ex},{ey}) ⭐")
+                    ss.sound_event = "alert"
+                else:
+                    ss.tempesta_pending = None
+
+                # Ricarica scudo lenta
+                if ss.scudo < 100 and ss.cnt_mosse % 5 == 0:
+                    ss.scudo = min(100, ss.scudo + 2)
+
+        # ── COMUNICAZIONI STARFLEET ─────────────────────────────────────────
+        ss.cnt_oracolo += 1
+        if ss.get("tempesta_pending") is not None:
+            ss.starfleet_alert = True
+        elif 0 < ss.w < 50:
+            starfleet_msg("⚠️ Energia critica! Vai ai Quiz per ricaricare.")
+            ss.starfleet_alert = True
+            ss.sound_event = "warn"
+        elif ss.cnt_oracolo % 3 == 0:
+            starfleet_msg(genera_frase_adams())
+            ss.starfleet_alert = False
+        else:
+            ss.starfleet_alert = False
+
+        if ss.w <= 0:
+            ss.w = 0; msg += " 💀 GAME OVER! Energia esaurita."; ss.sound_event = "gameover"
+        elif ss.pos == [9,9]:
+            if not ss.q:
+                msg += " 🏆 VITTORIA! Destinazione raggiunta e premio riconosciuto!"; ss.sound_event = "victory"
+            else:
+                msg += f" ✅ A (9,9), ma mancano {len(ss.q)} punto/i verde/i per il premio."
+
+        ss.msg = msg
 
     col_mappa, col_status, col_legenda = st.columns([1.5, 1, 0.7])
 
@@ -786,8 +946,7 @@ def schermata_gioco():
         buf = disegna_griglia_cockpit()
         st.image(buf, width='stretch')
         
-        if ss.msg:
-            st.markdown(f'<div class="msg-box" style="font-size:0.8rem; color:#AAA;">📡 LOG: {ss.msg}</div>', unsafe_allow_html=True)
+        # (event log spostato in col_status → COMUNICAZIONI DA STARFLEET)
 
     with col_status:
         st.markdown('<div class="section-title">🚀 SHIP DASHBOARD OPERATIVA</div>', unsafe_allow_html=True)
@@ -803,6 +962,22 @@ def schermata_gioco():
         
         st.markdown(f'<div class="metric-box"><div class="metric-label">📍 COORDINATE</div><div class="metric-value">({ss.pos[0]}, {ss.pos[1]})</div></div>', unsafe_allow_html=True)
         
+        # ── EVENT LOG ────────────────────────────────────────────────────
+        st.markdown('<div class="section-title">📡 EVENT LOG</div>', unsafe_allow_html=True)
+        msg_class = ""
+        if ss.msg:
+            msg_class = ("danger"  if any(x in ss.msg for x in ["💀","❌","💥","⚠️"])
+                    else "success" if any(x in ss.msg for x in ["🏆","🟢","✅"])
+                    else "")
+        st.markdown(f'<div class="msg-box {msg_class}" style="font-size:0.8rem;">{ss.msg}</div>',
+                    unsafe_allow_html=True)
+
+        # ── COMUNICAZIONI DA STARFLEET ────────────────────────────────────
+        st.markdown('<div class="section-title">🌌 COMUNICAZIONI DA STARFLEET</div>', unsafe_allow_html=True)
+        alert_class = "alert" if ss.get("starfleet_alert", False) else ""
+        st.markdown(f'<div class="oracolo-box {alert_class}" style="font-size:0.8rem;">{ss.oracolo_txt}</div>',
+                    unsafe_allow_html=True)
+
         st.markdown('<div class="section-title">🕹 SISTEMA NAVIGAZIONE</div>', unsafe_allow_html=True)
         col_dx, col_dy, col_go = st.columns([1.5, 1.5, 1])
         
@@ -829,13 +1004,14 @@ def schermata_gioco():
         # FIX CRITICO: SISTEMI PLANCIA spostati DENTRO col_status (erano finiti
         # dentro esegui_mossa per errore di indentazione — codice morto)
         st.markdown('<div class="section-title">▸ SISTEMI PLANCIA</div>', unsafe_allow_html=True)
-        col_sA, col_sB, col_sC = st.columns(3)
+        col_sA, col_sB, col_sC, col_sD = st.columns(4)
         with col_sA:
-            # FIX: rimosso width='stretch'
-            if st.button("🎓 Quiz", key="btn_quiz"): ss.quiz_tipo=None; ss.schermata="quiz"; st.rerun()
+            if st.button("📊 DB", key="btn_db"): ss.schermata="admin"; st.rerun()
         with col_sB:
-            if st.button("🔄 Nuova", key="btn_nuova"): nuova_partita(ss.nome); st.rerun()
+            if st.button("🎓 Quiz", key="btn_quiz"): ss.quiz_tipo=None; ss.schermata="quiz"; st.rerun()
         with col_sC:
+            if st.button("🔄 Nuova", key="btn_nuova"): nuova_partita(ss.nome); st.rerun()
+        with col_sD:
             if st.button("🚪 Logout", key="btn_logout"): ss.schermata="login"; st.session_state.nome=""; st.rerun()
 
     with col_legenda:
