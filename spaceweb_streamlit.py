@@ -37,6 +37,35 @@ MISSIONE_TESTO = (
 
 st.set_page_config(page_title="🚀 Space Web Dashboard", page_icon="🚀", layout="wide", initial_sidebar_state="collapsed")
 
+# --- INIZIO BLOCCO STILE IMM2 ---
+st.markdown("""
+<style>
+    /* Sfondo totale Nero/Blu notte */
+    .stApp {
+        background-color: #02040f !important;
+    }
+
+    /* Trasforma TUTTI i bottoni in stile "Cockpit Oro" (imm2) */
+    div.stButton > button {
+        background: linear-gradient(135deg, #0d1b4b 0%, #1a0e3d 100%) !important;
+        color: #FFD700 !important; /* Testo ORO */
+        border: 1px solid #FFD700 !important;
+        font-family: 'Orbitron', sans-serif !important;
+        text-transform: uppercase !important;
+        font-weight: bold !important;
+        letter-spacing: 2px !important;
+    }
+
+    /* Effetto quando passi il mouse sopra */
+    div.stButton > button:hover {
+        box-shadow: 0 0 20px rgba(255, 215, 0, 0.4) !important;
+        background-color: #1a0e3d !important;
+    }
+</style>
+""", unsafe_allow_html=True)
+# --- FINE BLOCCO STILE IMM2 ---
+
+
 # ============================================================
 #   Aggiornamento CSS Integrato — Stile Cockpit Cyberpunk (imm2 compliant)
 # ============================================================
@@ -283,7 +312,7 @@ def schermata_login():
         colA, colB = st.columns(2)
         with colA:
             # Bottone Primario Cockpit (kind="primary" supportato Streamlit >=1.35)
-            if st.button("🚀 ACCEDI", kind="primary", use_container_width=True, key="btn_accedi"):
+            if st.button("🚀 ACCEDI",  use_container_width=True, key="btn_accedi"):
                 if nome.strip():
                     if nome.strip().lower() == "adm":
                         st.session_state.adm_pwd_step = True; st.rerun()
@@ -492,7 +521,7 @@ def schermata_quiz():
                         </div>
                     """, unsafe_allow_html=True)
                     
-                    if st.button(f"ACCEDI AL TEST {q_id}", kind="primary", use_container_width=True, key=f"qbtn_{q_id}"):
+                    if st.button(f"ACCEDI AL TEST {q_id}",  use_container_width=True, key=f"qbtn_{q_id}"):
                         ss.quiz_tipo = q_id
                         ss.quiz_idx = 0; ss.quiz_score = 0
                         st.rerun()
@@ -558,14 +587,14 @@ def schermata_gioco():
             dy_sel = st.selectbox("ΔY", options=[-3,-2,-1,0,+1,+2,+3], format_func=lambda v: f"+{v}" if v>0 else str(v), key="sel_dy")
         with col_go:
             st.markdown("<br>", unsafe_allow_html=True)
-            if st.button("VAI", kind="primary", key="btn_vai", use_container_width=True):
+            if st.button("VAI",  key="btn_vai", use_container_width=True):
                 # esegui_mossa(dx_sel, dy_sel) # Logica invariata, omessa per brevità
                 st.rerun()
 
         st.markdown('<div class="section-title">▸ SISTEMI PLANCIA</div>', unsafe_allow_html=True)
         col_sA, col_sB, col_sC = st.columns(3)
         with col_sA:
-            if st.button("🎓 Quiz",  kind="primary", use_container_width=True, key="btn_quiz"): ss.quiz_tipo=None; ss.schermata="quiz"; st.rerun()
+            if st.button("🎓 Quiz", use_container_width=True, key="btn_quiz"): ss.quiz_tipo=None; ss.schermata="quiz"; st.rerun()
         with col_sB:
             if st.button("🔄 Nuova", use_container_width=True, key="btn_nuova"): nuova_partita(ss.nome); st.rerun()
         with col_sC:
