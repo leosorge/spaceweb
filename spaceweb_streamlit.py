@@ -730,17 +730,37 @@ def schermata_quiz():
         else:
             esito = "FALLITO";    colore_esito = "#ff4444"; ss.sound_event = "danger"
 
-        # FIX: salva il punteggio una sola volta (non ad ogni rerun)
+        # Salva il punteggio UNA SOLA VOLTA e assegna ricarica energia al giocatore
         chiave_salvato = f"quiz_{q_id}_salvato_{ss.nome}"
         if not ss.get(chiave_salvato):
             aggiorna_punteggio(ss.nome, q_id, score)
             ss[chiave_salvato] = True
+            # Ricarica energia in base all'esito (il Quiz è il modo per ricaricare)
+            if pct_finale >= 80:
+                en_bonus = 50; sc_bonus = 20
+            elif pct_finale >= 50:
+                en_bonus = 25; sc_bonus = 10
+            else:
+                en_bonus = 5;  sc_bonus = 0
+            ss.w     = min(100, ss.w     + en_bonus)
+            ss.scudo = min(100, ss.scudo + sc_bonus)
+            ss[f"quiz_{q_id}_en_bonus"] = en_bonus
+            ss[f"quiz_{q_id}_sc_bonus"] = sc_bonus
+
+        en_bonus = ss.get(f"quiz_{q_id}_en_bonus", 0)
+        sc_bonus = ss.get(f"quiz_{q_id}_sc_bonus", 0)
+        bonus_txt = ""
+        if en_bonus > 0:
+            bonus_txt = f"<br>⚡ +{en_bonus} energia"
+            if sc_bonus > 0:
+                bonus_txt += f" &nbsp;|&nbsp; 🛡️ +{sc_bonus} scudo"
 
         st.markdown(f"""
         <div class="metric-box" style="text-align:center;padding:20px;">
             <div style="font-family:'Orbitron',monospace;color:{colore_esito};font-size:1.8rem;font-weight:900;">{esito}</div>
             <div style="font-family:'Share Tech Mono',monospace;color:#c8d8f0;margin-top:10px;">
                 Punteggio: <b style="color:#FFD700;">{score} / {max_score}</b> ({pct_finale}%)
+                {bonus_txt}
             </div>
             <div style="font-family:'Share Tech Mono',monospace;color:#6688aa;font-size:0.8rem;margin-top:6px;">
                 Premio: {info.get("premio","N/D")} | Sponsor: {info.get("sponsor","N/D")}
