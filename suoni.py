@@ -5,7 +5,6 @@
 import numpy as np
 import io
 import wave
-import base64
 import streamlit as st
 
 
@@ -51,16 +50,11 @@ def _gen_noise(dur: float, vol: float, sr: int = 22050) -> bytes:
 
 
 def _play(wav_bytes: bytes):
-    """Inietta un elemento <audio autoplay hidden> via st.markdown.
-    DOMPurify consente <audio src='data:audio/wav;base64,...'> (audio è in ADD_DATA_URI_TAGS).
-    Non mostra controlli visibili.
+    """Riproduce audio via st.audio(autoplay=True) — nativo Streamlit 1.28+.
+    Affidabile: Streamlit gestisce direttamente l'elemento audio nel DOM
+    senza iframe o DOMPurify. Il player è visibile ma piccolo.
     """
-    b64 = base64.b64encode(wav_bytes).decode()
-    st.markdown(
-        f'<audio autoplay style="display:none" '
-        f'src="data:audio/wav;base64,{b64}"></audio>',
-        unsafe_allow_html=True
-    )
+    st.audio(wav_bytes, format='audio/wav', autoplay=True)
 
 
 def play_sound_event(event: str):

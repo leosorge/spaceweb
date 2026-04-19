@@ -470,29 +470,36 @@ def nuova_partita(nome):
 def disegna_griglia_cockpit():
     ss = st.session_state
 
-    fig = plt.figure(figsize=(7, 7), facecolor='#02040f')
+    # figsize proporzionato alle dimensioni reali dell'immagine (1152x925 = ratio 1.245)
+    # così i pianeti non vengono allungati. set_aspect('equal') NON va usato:
+    # forzerebbe un riquadro quadrato su un'immagine rettangolare.
+    import matplotlib.image as mpimg
+    bg_path = "p_background.png"
+    _img = None
+    if os.path.exists(bg_path):
+        try:
+            _img = mpimg.imread(bg_path)
+        except Exception:
+            pass
+
+    if _img is not None:
+        img_h, img_w = _img.shape[:2]
+        aspect = img_w / img_h          # 1.245
+    else:
+        aspect = 1.0
+
+    fig = plt.figure(figsize=(7 * aspect, 7), facecolor='#02040f')
     ax = fig.add_axes([0, 0, 1, 1])
     ax.set_facecolor('#02040f')
 
     ax.set_xlim(-0.5, 9.5); ax.set_ylim(-0.5, 9.5)
 
-    bg_path = "p_background.png"
-    if os.path.exists(bg_path):
-        import matplotlib.image as mpimg
-        try:
-            img = mpimg.imread(bg_path)
-            # Immagine completa (non croppata): l'extent [-0.5,9.5] mappa
-            # le posizioni di gioco 0-9 esattamente sui marcatori visivi dell'immagine.
-            # Il crop rompeva questo allineamento.
-            ax.imshow(img, extent=[-0.5, 9.5, 9.5, -0.5], aspect='auto', zorder=0)
-        except Exception:
-            pass
-
-    # Griglia agli interi 0-9: i game elements (scatter) cadono
-    # sulle INTERSEZIONI delle linee (non nei centri delle celle).
-    for i in range(10):
-        ax.axhline(i, color='#1a3050', linewidth=0.5, alpha=0.55, zorder=1)
-        ax.axvline(i, color='#1a3050', linewidth=0.5, alpha=0.55, zorder=1)
+    if _img is not None:
+        # extent mappa l'immagine intera sullo spazio dati [-0.5,9.5]:
+        # posizioni di gioco 0-9 coincidono coi centri delle celle nell'immagine.
+        # L'immagine ha già le linee della griglia incorporate: NON aggiungiamo
+        # axhline/axvline per evitare duplicazione.
+        ax.imshow(_img, extent=[-0.5, 9.5, 9.5, -0.5], aspect='auto', zorder=0)
 
     ax.set_xticks([]); ax.set_yticks([])
 
@@ -523,7 +530,7 @@ def disegna_griglia_cockpit():
         ax.add_patch(shield)
 
     ax.invert_yaxis()
-    ax.set_aspect('equal')
+    # NO set_aspect('equal'): il figsize già rispetta il ratio dell'immagine
     
     buf = io.BytesIO()
     plt.savefig(buf, format='png', dpi=100, facecolor='#02040f')
