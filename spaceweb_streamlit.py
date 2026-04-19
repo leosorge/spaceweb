@@ -871,7 +871,7 @@ def schermata_gioco():
     with col_mappa:
         st.markdown('<div class="section-title">🌌 VISTA SETTORE SOTTOSPAZIO</div>', unsafe_allow_html=True)
         buf = disegna_griglia_cockpit()
-        st.image(buf, use_container_width=True)
+        st.image(buf, width='stretch')
         
         # (event log spostato in col_status → COMUNICAZIONI DA STARFLEET)
 
