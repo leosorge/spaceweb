@@ -1,6 +1,17 @@
 # suoni.py
 # Gestione effetti sonori Web Audio per Space Web
 import streamlit as st
+import base64 as _b64
+
+def _js_iframe(html: str):
+    """
+    Inietta HTML+JS in un iframe via data URI.
+    st.iframe con HTML grezzo viene sanitizzato da DOMPurify che rimuove <script>.
+    Il data URI bypassa la sanitizzazione, il JavaScript viene eseguito normalmente.
+    """
+    b64 = _b64.b64encode(html.encode("utf-8")).decode("utf-8")
+    st.iframe(f"data:text/html;base64,{b64}", height=1)
+
 
 def play_sound_event(event: str):
     """Suona un breve effetto Web Audio in base al tipo di evento."""
@@ -9,7 +20,7 @@ def play_sound_event(event: str):
 
     # ── Crepitio tempesta: preavviso (10s, volume normale) ───────────────
     if event == "alert":
-        st.iframe("""
+        _js_iframe("""
         <script>
         (function(){
           try {
@@ -33,14 +44,10 @@ def play_sound_event(event: str):
                 src.start(t0); src.stop(t0 + len);
               }
               let t = ac.currentTime;
-              for (let i = 0; i < 20; i++) {
-                crackle(t, 0.35);
-                t += 0.5;
-              }
+              for (let i = 0; i < 20; i++) { crackle(t, 0.35); t += 0.5; }
               const osc = ac.createOscillator();
               const og  = ac.createGain();
-              osc.type = "sawtooth";
-              osc.frequency.value = 55;
+              osc.type = "sawtooth"; osc.frequency.value = 55;
               og.gain.setValueAtTime(0.0001, ac.currentTime);
               og.gain.linearRampToValueAtTime(0.12, ac.currentTime + 0.5);
               og.gain.setValueAtTime(0.12, ac.currentTime + 9.0);
@@ -50,13 +57,12 @@ def play_sound_event(event: str):
             });
           } catch(e) { console.warn("audio error", e); }
         })();
-        </script>
-        """, height=1)
+        </script>""")
         return
 
     # ── Crepitio tempesta: nave colpita (volume doppio, 3s) ──────────────
     if event == "explosion":
-        st.iframe("""
+        _js_iframe("""
         <script>
         (function(){
           try {
@@ -92,8 +98,7 @@ def play_sound_event(event: str):
             });
           } catch(e) { console.warn("audio error", e); }
         })();
-        </script>
-        """, height=1)
+        </script>""")
         return
 
     # ── Suoni brevi standard ─────────────────────────────────────────────
@@ -108,7 +113,7 @@ def play_sound_event(event: str):
     if event not in sound_map:
         return
     wave, freq, dur, vol = sound_map[event]
-    st.iframe(f"""
+    _js_iframe(f"""
     <script>
     (function(){{
       try {{
@@ -125,5 +130,4 @@ def play_sound_event(event: str):
         }});
       }} catch(e) {{ console.warn("audio error", e); }}
     }})();
-    </script>
-    """, height=1)
+    </script>""")

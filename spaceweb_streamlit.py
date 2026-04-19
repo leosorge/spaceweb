@@ -361,10 +361,17 @@ def genera_frase_adams():
     except Exception:
         return "⏱️ Il tempo, come la voglia di muoversi, era già altrove."
 
-# ============================================================
-# FIX SUONI: components.html(height=1) viene ignorato da Streamlit.
-# Usiamo st.markdown per iniettare <script> direttamente nel DOM.
-# ============================================================
+import base64 as _base64
+
+def _iframe_js(html: str, height: int = 1):
+    """
+    Embeds HTML+JS via data URI in st.iframe.
+    st.iframe con HTML grezzo passa per DOMPurify che rimuove i tag <script>.
+    Il data URI bypassa la sanitizzazione e consente l'esecuzione del JavaScript.
+    """
+    b64 = _base64.b64encode(html.encode("utf-8")).decode("utf-8")
+    st.iframe(f"data:text/html;base64,{b64}", height=height)
+
 def _render_audio_toggle(key: str = "audio_btn"):
     """
     Bottone Streamlit nativo per toggle audio on/off.
@@ -403,7 +410,7 @@ def mostra_testata_finale_arcade():
         unsafe_allow_html=True)
 
 def mostra_intro_arcade():
-    st.iframe("""
+    _iframe_js("""
         <style>
           @keyframes swPulse {
             0%   { box-shadow: 0 0 0 rgba(255,211,77,0.00); }
@@ -474,23 +481,17 @@ def disegna_griglia_cockpit():
         import matplotlib.image as mpimg
         try:
             img = mpimg.imread(bg_path)
-            # aspect='auto': l'immagine si adatta al riquadro senza distorcere l'asse
-            # extent=[left, right, bottom, top] con y invertita (9.5→-0.5)
-            # ax.invert_yaxis() a fine funzione la raddrizza: y=0 in alto, y=9 in basso
-            ax.imshow(img, extent=[-0.5, 9.5, 9.5, -0.5], aspect='auto', zorder=0)
+            # Center-crop a quadrato: l'immagine è 1152×925 (più larga che alta).
+            # Tagliamo simmetricamente sin/dx per avere 925×925 senza distorsioni.
+            # Le linee di griglia dell'immagine restano uniformi dopo il crop.
+            h, w = img.shape[:2]
+            s = min(h, w)
+            x0 = (w - s) // 2
+            img_sq = img[:s, x0:x0 + s]
+            ax.imshow(img_sq, extent=[-0.5, 9.5, 9.5, -0.5], zorder=0)
         except Exception:
             pass
 
-    # Griglia esplicita sulle celle (linee tra i pixel di gioco 0..9)
-    for i in range(-1, 10):
-        ax.axhline(i + 0.5, color='#1e3a5a', linewidth=0.6, alpha=0.8, zorder=1)
-        ax.axvline(i + 0.5, color='#1e3a5a', linewidth=0.6, alpha=0.8, zorder=1)
-    # Numeri di riga/colonna sui bordi
-    for i in range(10):
-        ax.text(i, -0.35, str(i), ha='center', va='center',
-                color='#4466aa', fontsize=6, zorder=2)
-        ax.text(-0.35, i, str(i), ha='center', va='center',
-                color='#4466aa', fontsize=6, zorder=2)
     ax.set_xticks([]); ax.set_yticks([])
 
     direzione = ss.get('direzione', 'N')
