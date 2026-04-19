@@ -5,7 +5,7 @@
 # ============================================================
 
 import streamlit as st
-import streamlit.components.v1 as components
+# components.v1.html rimosso (deprecato dopo 2026-06-01) — si usa st.iframe
 import matplotlib.pyplot as plt
 from matplotlib.path import Path
 import matplotlib.transforms as transforms   # FIX: rimossa la doppia importazione (era anche come mtransforms)
@@ -403,7 +403,7 @@ def mostra_testata_finale_arcade():
         unsafe_allow_html=True)
 
 def mostra_intro_arcade():
-    components.html("""
+    st.iframe("""
         <style>
           @keyframes swPulse {
             0%   { box-shadow: 0 0 0 rgba(255,211,77,0.00); }

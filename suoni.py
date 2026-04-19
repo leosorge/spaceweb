@@ -1,6 +1,6 @@
 # suoni.py
 # Gestione effetti sonori Web Audio per Space Web
-import streamlit.components.v1 as components
+import streamlit as st
 
 def play_sound_event(event: str):
     """Suona un breve effetto Web Audio in base al tipo di evento."""
@@ -9,7 +9,7 @@ def play_sound_event(event: str):
 
     # ── Crepitio tempesta: preavviso (10s, volume normale) ───────────────
     if event == "alert":
-        components.html("""
+        st.iframe("""
         <script>
         (function(){
           try {
@@ -56,7 +56,7 @@ def play_sound_event(event: str):
 
     # ── Crepitio tempesta: nave colpita (volume doppio, 3s) ──────────────
     if event == "explosion":
-        components.html("""
+        st.iframe("""
         <script>
         (function(){
           try {
@@ -108,7 +108,7 @@ def play_sound_event(event: str):
     if event not in sound_map:
         return
     wave, freq, dur, vol = sound_map[event]
-    components.html(f"""
+    st.iframe(f"""
     <script>
     (function(){{
       try {{
