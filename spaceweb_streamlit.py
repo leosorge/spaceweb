@@ -495,11 +495,14 @@ def disegna_griglia_cockpit():
     ax.set_xlim(-0.5, 9.5); ax.set_ylim(-0.5, 9.5)
 
     if _img is not None:
-        # extent mappa l'immagine intera sullo spazio dati [-0.5,9.5]:
-        # posizioni di gioco 0-9 coincidono coi centri delle celle nell'immagine.
-        # L'immagine ha già le linee della griglia incorporate: NON aggiungiamo
-        # axhline/axvline per evitare duplicazione.
+        # extent [-0.5,9.5,9.5,-0.5]: image top→data y=-0.5, image bottom→data y=9.5
+        # dopo invert_yaxis: image row 0 appare in cima, row n in fondo (orientamento corretto)
         ax.imshow(_img, extent=[-0.5, 9.5, 9.5, -0.5], aspect='auto', zorder=0)
+
+    # Griglia esplicita 10x10 — sottile, sulle posizioni di gioco 0-9
+    for i in range(10):
+        ax.axhline(i, color='#1e88e5', linewidth=0.5, alpha=0.40, zorder=1)
+        ax.axvline(i, color='#1e88e5', linewidth=0.5, alpha=0.40, zorder=1)
 
     ax.set_xticks([]); ax.set_yticks([])
 
@@ -511,10 +514,24 @@ def disegna_griglia_cockpit():
     px, py = int(ss.pos[0]), int(ss.pos[1])
     enx, eny = int(ss.pos_nemica[0]), int(ss.pos_nemica[1])
 
-    for p in ss.l: 
-        ax.scatter(p[0], p[1], s=80, color='#FF4444', alpha=0.6, zorder=3) 
-    for p in ss.q: 
+    for p in ss.l:
+        ax.scatter(p[0], p[1], s=80, color='#FF4444', alpha=0.6, zorder=3)
+    for p in ss.q:
         ax.scatter(p[0], p[1], s=100, color='#00FF88', alpha=0.8, edgecolors='white', zorder=3)
+
+    # Tempesta magnetica: mostra le celle colpite come pallini rosa
+    if ss.get("tempesta_pending") is not None:
+        tp = ss.tempesta_pending
+        ex, ey = tp[0], tp[1]
+        forma  = tp[2] if len(tp) > 2 else "croce"
+        if forma == "punto":
+            zone_t = [(ex, ey)]
+        else:
+            zone_t = [(ex,ey),(ex-1,ey),(ex+1,ey),(ex,ey-1),(ex,ey+1)]
+            zone_t = [(x,y) for x,y in zone_t if 0<=x<=9 and 0<=y<=9]
+        for zx, zy in zone_t:
+            ax.scatter(zx, zy, s=220, color='hotpink', alpha=0.75,
+                       edgecolors='white', linewidth=0.8, zorder=2)
 
     if any(list(e) == [enx, eny] for e in ss.get("esplosione", [])):
         ax.scatter(enx, eny, s=500, color='hotpink', alpha=0.5, zorder=4, edgecolors='white', linewidth=2)
@@ -813,8 +830,10 @@ def schermata_gioco():
 
                 # ── TEMPESTA MAGNETICA (2 fasi) ──────────────────────────────
                 if ss.get("tempesta_pending") is not None:
-                    ex, ey = ss.tempesta_pending
-                    forma = random.choice(["punto", "croce"])
+                    tp = ss.tempesta_pending
+                    ex, ey = tp[0], tp[1]
+                    # forma salvata quando la tempesta è stata creata
+                    forma = tp[2] if len(tp) > 2 else "croce"
                     if forma == "punto":
                         zone = [(ex, ey)]
                     else:
@@ -832,8 +851,10 @@ def schermata_gioco():
                     ss.tempesta_pending = None
                 elif random.random() < 0.30:
                     ex, ey = random.randint(0,9), random.randint(0,9)
-                    ss.tempesta_pending = (ex, ey)
-                    starfleet_msg(f"⭐ ATTENZIONE! Tempesta magnetica in arrivo su ({ex},{ey}) ⭐")
+                    forma = random.choice(["punto", "croce"])
+                    ss.tempesta_pending = (ex, ey, forma)
+                    celle = "1 cella" if forma == "punto" else "a croce (5 celle)"
+                    starfleet_msg(f"⭐ ATTENZIONE! Tempesta magnetica {celle} su ({ex},{ey}) ⭐")
                     ss.sound_event = "alert"
                 else:
                     ss.tempesta_pending = None
@@ -909,10 +930,12 @@ def schermata_gioco():
         col_dx, col_dy, col_go = st.columns([1.5, 1.5, 1])
         
         with col_dx:
-            dx_sel = st.selectbox("ΔX", options=[-3,-2,-1,0,+1,+2,+3], 
+            dx_sel = st.selectbox("ΔX", options=[-3,-2,-1,0,+1,+2,+3],
+                                  index=3,
                                   format_func=lambda v: f"+{v}" if v>0 else str(v), key="sel_dx")
         with col_dy:
-            dy_sel = st.selectbox("ΔY", options=[-3,-2,-1,0,+1,+2,+3], 
+            dy_sel = st.selectbox("ΔY", options=[-3,-2,-1,0,+1,+2,+3],
+                                  index=3,
                                   format_func=lambda v: f"+{v}" if v>0 else str(v), key="sel_dy")
         
         with col_go:
