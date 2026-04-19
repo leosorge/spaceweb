@@ -248,7 +248,14 @@ def db_carica() -> pd.DataFrame:
 def db_salva_utente(row: dict):
     try:
         sb = get_supabase()
-        sb.table("utenti").upsert(row, on_conflict="nome").execute()
+        # Salva solo le colonne che la tabella Supabase conosce (evita errori di schema)
+        colonne_supabase = (
+            ["nome", "ww", "energia"] +
+            [f"punteggio{i}" for i in range(1, 10)] +
+            [f"data{i}"      for i in range(1, 10)]
+        )
+        row_filtrato = {k: v for k, v in row.items() if k in colonne_supabase}
+        sb.table("utenti").upsert(row_filtrato, on_conflict="nome").execute()
     except Exception as e:
         st.warning(f"⚠️ Errore salvataggio Supabase: {e}")
 
@@ -730,39 +737,47 @@ def schermata_quiz():
         else:
             esito = "FALLITO";    colore_esito = "#ff4444"; ss.sound_event = "danger"
 
-        # Salva il punteggio UNA SOLA VOLTA e assegna ricarica energia al giocatore
+        # ── SALVA UNA SOLA VOLTA ────────────────────────────────────────────
         chiave_salvato = f"quiz_{q_id}_salvato_{ss.nome}"
-        if not ss.get(chiave_salvato):
-            aggiorna_punteggio(ss.nome, q_id, score)
-            ss[chiave_salvato] = True
-            # Ricarica energia in base all'esito (il Quiz è il modo per ricaricare)
+        if not st.session_state.get(chiave_salvato):
+            # Energia/scudo: calcola delta reale (cap a 100)
             if pct_finale >= 80:
                 en_bonus = 50; sc_bonus = 20
             elif pct_finale >= 50:
                 en_bonus = 25; sc_bonus = 10
             else:
                 en_bonus = 5;  sc_bonus = 0
-            ss.w     = min(100, ss.w     + en_bonus)
-            ss.scudo = min(100, ss.scudo + sc_bonus)
-            ss[f"quiz_{q_id}_en_bonus"] = en_bonus
-            ss[f"quiz_{q_id}_sc_bonus"] = sc_bonus
+            en_effettivo  = min(en_bonus, 100 - ss.w)
+            sc_effettivo  = min(sc_bonus, 100 - ss.scudo)
+            ss.w          = min(100, ss.w     + en_bonus)
+            ss.scudo      = min(100, ss.scudo + sc_bonus)
+            # Salva ww nel DB
+            aggiorna_punteggio(ss.nome, q_id, score)
+            st.session_state[chiave_salvato] = True
+            st.session_state[f"_qr_{q_id}_en"] = en_effettivo
+            st.session_state[f"_qr_{q_id}_sc"] = sc_effettivo
+            st.session_state[f"_qr_{q_id}_qwat"] = score
 
-        en_bonus = ss.get(f"quiz_{q_id}_en_bonus", 0)
-        sc_bonus = ss.get(f"quiz_{q_id}_sc_bonus", 0)
-        bonus_txt = ""
-        if en_bonus > 0:
-            bonus_txt = f"<br>⚡ +{en_bonus} energia"
-            if sc_bonus > 0:
-                bonus_txt += f" &nbsp;|&nbsp; 🛡️ +{sc_bonus} scudo"
+        en_eff   = st.session_state.get(f"_qr_{q_id}_en",   0)
+        sc_eff   = st.session_state.get(f"_qr_{q_id}_sc",   0)
+        qwat_eff = st.session_state.get(f"_qr_{q_id}_qwat", score)
+
+        righe_bonus = f'<div style="color:#FFD700;font-size:1.1rem;margin-top:8px;">🏆 +{qwat_eff} Qwat registrati nel tuo profilo</div>'
+        if en_eff > 0:
+            righe_bonus += f'<br><span style="color:#88ccff;">⚡ +{en_eff} energia</span>'
+        else:
+            righe_bonus += '<br><span style="color:#556677;">⚡ Energia già al massimo</span>'
+        if sc_eff > 0:
+            righe_bonus += f' &nbsp;|&nbsp; <span style="color:#88ccff;">🛡️ +{sc_eff} scudo</span>'
 
         st.markdown(f"""
         <div class="metric-box" style="text-align:center;padding:20px;">
             <div style="font-family:'Orbitron',monospace;color:{colore_esito};font-size:1.8rem;font-weight:900;">{esito}</div>
             <div style="font-family:'Share Tech Mono',monospace;color:#c8d8f0;margin-top:10px;">
-                Punteggio: <b style="color:#FFD700;">{score} / {max_score}</b> ({pct_finale}%)
-                {bonus_txt}
+                Punteggio quiz: <b style="color:#FFD700;">{score} / {max_score}</b> ({pct_finale}%)
             </div>
-            <div style="font-family:'Share Tech Mono',monospace;color:#6688aa;font-size:0.8rem;margin-top:6px;">
+            {righe_bonus}
+            <div style="font-family:'Share Tech Mono',monospace;color:#6688aa;font-size:0.8rem;margin-top:8px;">
                 Premio: {info.get("premio","N/D")} | Sponsor: {info.get("sponsor","N/D")}
             </div>
         </div>
