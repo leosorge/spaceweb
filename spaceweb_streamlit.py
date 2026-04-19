@@ -305,6 +305,10 @@ def init_state():
         st.session_state.direzione        = "N"
 
 init_state()
+# audio_on gestito fuori da init_state: non viene resettato se l'utente ricarica
+# ma lo stato di gioco viene reinizializzato
+if "audio_on" not in st.session_state:
+    st.session_state.audio_on = False
 
 # Funzioni supporto dati
 def aggiorna_punteggio(nome_utente, quale, valore):
@@ -361,135 +365,28 @@ def genera_frase_adams():
 # FIX SUONI: components.html(height=1) viene ignorato da Streamlit.
 # Usiamo st.markdown per iniettare <script> direttamente nel DOM.
 # ============================================================
-def _setup_audio_engine():
+def _render_audio_toggle(key: str = "audio_btn"):
     """
-    Monta UN SOLO iframe audio persistente che:
-    1. Mostra un bottone "🔊 Attiva Audio" per sbloccare l'AudioContext (obbligatorio browser)
-    2. Ascolta postMessage con {sound: "bonus"|"warn"|...} e suona
-    Chiamare una volta sola all'inizio della schermata gioco.
+    Bottone Streamlit nativo per toggle audio on/off.
+    Lo stato persiste in session_state tra i rerun (non si perde ad ogni interazione).
     """
-    components.html("""
-    <style>
-      body { margin:0; padding:0; background:transparent; font-family:monospace; }
-      button {
-        background: rgba(13,27,75,0.95);
-        color: #FFD700;
-        border: 1px solid #FFD700;
-        padding: 4px 12px;
-        font-size: 0.7rem;
-        letter-spacing: 1px;
-        cursor: pointer;
-        border-radius: 2px;
-        width: 100%;
-      }
-      button:hover { background: #1a0e3d; }
-      button.active { color: #00ff88; border-color: #00ff88; }
-    </style>
-    <button id="btn" onclick="unlock()">🔇 AUDIO OFF — clicca per attivare</button>
-    <script>
-    var ac = null;
-
-    function unlock() {
-      if (!ac) {
-        ac = new (window.AudioContext || window.webkitAudioContext)();
-      }
-      ac.resume().then(function() {
-        document.getElementById("btn").textContent = "🔊 AUDIO ON";
-        document.getElementById("btn").classList.add("active");
-        document.getElementById("btn").onclick = function() {
-          ac.suspend();
-          document.getElementById("btn").textContent = "🔇 AUDIO OFF — clicca per attivare";
-          document.getElementById("btn").classList.remove("active");
-          document.getElementById("btn").onclick = unlock;
-        };
-      });
-    }
-
-    var SOUNDS = {
-      bonus:    {wave:"sine",     freq:880,  dur:0.55, vol:0.18},
-      danger:   {wave:"sawtooth", freq:180,  dur:0.60, vol:0.30},
-      warn:     {wave:"square",   freq:440,  dur:0.45, vol:0.15},
-      stealth:  {wave:"sine",     freq:220,  dur:0.40, vol:0.25},
-      gameover: {wave:"sawtooth", freq:80,   dur:0.70, vol:0.60},
-      victory:  {wave:"sine",     freq:1047, dur:0.60, vol:0.50},
-    };
-
-    function playSimple(s) {
-      if (!ac || ac.state !== "running") return;
-      var p = SOUNDS[s];
-      if (!p) return;
-      var o = ac.createOscillator(), g = ac.createGain();
-      o.type = p.wave; o.frequency.value = p.freq;
-      g.gain.setValueAtTime(p.vol, ac.currentTime);
-      g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + p.dur);
-      o.connect(g); g.connect(ac.destination);
-      o.start(); o.stop(ac.currentTime + p.dur);
-    }
-
-    function playCrackle(vol, density, count, interval, len) {
-      if (!ac || ac.state !== "running") return;
-      var t = ac.currentTime;
-      for (var i = 0; i < count; i++) {
-        (function(t0) {
-          var buf = ac.createBuffer(1, Math.floor(ac.sampleRate * len), ac.sampleRate);
-          var data = buf.getChannelData(0);
-          for (var j = 0; j < data.length; j++) { data[j] = Math.random() < density ? (Math.random()*2-1) : 0; }
-          var src = ac.createBufferSource(), g = ac.createGain();
-          src.buffer = buf; g.gain.setValueAtTime(vol, t0); g.gain.linearRampToValueAtTime(0.0001, t0+len);
-          src.connect(g); g.connect(ac.destination); src.start(t0); src.stop(t0+len);
-        })(t);
-        t += interval;
-      }
-    }
-
-    function playAlert() {
-      if (!ac || ac.state !== "running") return;
-      playCrackle(0.30, 0.05, 20, 0.5, 0.35);
-      var osc = ac.createOscillator(), og = ac.createGain();
-      osc.type = "sawtooth"; osc.frequency.value = 55;
-      og.gain.setValueAtTime(0.0001, ac.currentTime); og.gain.linearRampToValueAtTime(0.12, ac.currentTime+0.5);
-      og.gain.setValueAtTime(0.12, ac.currentTime+9.0); og.gain.linearRampToValueAtTime(0.0001, ac.currentTime+10.0);
-      osc.connect(og); og.connect(ac.destination); osc.start(); osc.stop(ac.currentTime+10.0);
-    }
-
-    function playExplosion() {
-      if (!ac || ac.state !== "running") return;
-      playCrackle(0.60, 0.15, 6, 0.5, 0.4);
-      var osc = ac.createOscillator(), og = ac.createGain();
-      osc.type = "sawtooth";
-      osc.frequency.setValueAtTime(120, ac.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(30, ac.currentTime+2.5);
-      og.gain.setValueAtTime(0.0001, ac.currentTime); og.gain.linearRampToValueAtTime(0.65, ac.currentTime+0.05);
-      og.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime+3.0);
-      osc.connect(og); og.connect(ac.destination); osc.start(); osc.stop(ac.currentTime+3.0);
-    }
-
-    // Ascolta i messaggi dalla pagina Streamlit principale
-    window.addEventListener("message", function(e) {
-      var snd = e.data && e.data.sound;
-      if (!snd) return;
-      if      (snd === "alert")     playAlert();
-      else if (snd === "explosion") playExplosion();
-      else                          playSimple(snd);
-    });
-    </script>
-    """, height=32)
+    if "audio_on" not in st.session_state:
+        st.session_state.audio_on = False
+    label = "🔊 AUDIO ON" if st.session_state.audio_on else "🔇 AUDIO OFF"
+    if st.button(label, key=key):
+        st.session_state.audio_on = not st.session_state.audio_on
+        st.rerun()
 
 
 def _inject_sound(event: str):
-    """Manda un postMessage all'iframe audio engine."""
-    if not event:
+    """
+    Suona direttamente con Web Audio API (un AudioContext per evento).
+    Funziona perché Streamlit Cloud abilita allow="autoplay" negli iframe dei componenti,
+    quindi ac.resume() riesce senza richiedere gesture utente aggiuntiva.
+    """
+    if not event or not st.session_state.get("audio_on", False):
         return
-    # Trova l'iframe audio engine e manda il messaggio tramite la pagina parent
-    components.html(f"""
-    <script>
-    // Invia a tutti gli iframe della pagina (incluso audio_engine)
-    var frames = window.parent.document.querySelectorAll("iframe");
-    frames.forEach(function(f) {{
-      try {{ f.contentWindow.postMessage({{sound: "{event}"}}, "*"); }} catch(e) {{}}
-    }});
-    </script>
-    """, height=0)
+    play_sound_event(event)
 
 
 def starfleet_msg(testo: str):
@@ -565,13 +462,11 @@ def nuova_partita(nome):
 
 def disegna_griglia_cockpit():
     ss = st.session_state
-    
+
     fig = plt.figure(figsize=(7, 7), facecolor='#02040f')
     ax = fig.add_axes([0, 0, 1, 1])
     ax.set_facecolor('#02040f')
-    
-    ax.grid(False)
-    ax.set_xticks([]); ax.set_yticks([])
+
     ax.set_xlim(-0.5, 9.5); ax.set_ylim(-0.5, 9.5)
 
     bg_path = "p_background.png"
@@ -579,9 +474,24 @@ def disegna_griglia_cockpit():
         import matplotlib.image as mpimg
         try:
             img = mpimg.imread(bg_path)
-            ax.imshow(img, extent=[-0.5, 9.5, 9.5, -0.5], zorder=0)
+            # aspect='auto': l'immagine si adatta al riquadro senza distorcere l'asse
+            # extent=[left, right, bottom, top] con y invertita (9.5→-0.5)
+            # ax.invert_yaxis() a fine funzione la raddrizza: y=0 in alto, y=9 in basso
+            ax.imshow(img, extent=[-0.5, 9.5, 9.5, -0.5], aspect='auto', zorder=0)
         except Exception:
             pass
+
+    # Griglia esplicita sulle celle (linee tra i pixel di gioco 0..9)
+    for i in range(-1, 10):
+        ax.axhline(i + 0.5, color='#1e3a5a', linewidth=0.6, alpha=0.8, zorder=1)
+        ax.axvline(i + 0.5, color='#1e3a5a', linewidth=0.6, alpha=0.8, zorder=1)
+    # Numeri di riga/colonna sui bordi
+    for i in range(10):
+        ax.text(i, -0.35, str(i), ha='center', va='center',
+                color='#4466aa', fontsize=6, zorder=2)
+        ax.text(-0.35, i, str(i), ha='center', va='center',
+                color='#4466aa', fontsize=6, zorder=2)
+    ax.set_xticks([]); ax.set_yticks([])
 
     direzione = ss.get('direzione', 'N')
     angoli = {'N': 0, 'E': -90, 'S': -180, 'O': -270}
@@ -660,7 +570,13 @@ def schermata_login():
 
 def schermata_quiz():
     ss = st.session_state
+    # Suona l'evento impostato nell'interazione precedente (risposta giusta/sbagliata, fine quiz)
+    _inject_sound(ss.sound_event)
+    ss.sound_event = ""
+
     mostra_testata_finale_arcade()
+    # Bottone audio Streamlit nativo — stesso stato condiviso con schermata_gioco
+    _render_audio_toggle(key="audio_btn_quiz")
 
     if ss.quiz_tipo is None:
         st.markdown('<div class="section-title">🎓 MODULI DI ADDESTRAMENTO AVANZATO</div>', unsafe_allow_html=True)
@@ -820,7 +736,8 @@ def schermata_quiz():
 def schermata_gioco():
     ss = st.session_state
     mostra_testata_finale_arcade()
-    _setup_audio_engine()   # Monta l'iframe audio persistente con bottone attiva/disattiva
+    # Bottone audio Streamlit nativo — persiste tra i rerun via session_state
+    _render_audio_toggle(key="audio_btn_gioco")
 
     # FIX CRITICO: esegui_mossa definita PRIMA di essere usata, e portata fuori
     # dal blocco with col_status così è accessibile nel bottone VAI
