@@ -579,7 +579,7 @@ def disegna_griglia_cockpit():
         import matplotlib.image as mpimg
         try:
             img = mpimg.imread(bg_path)
-            ax.imshow(img, extent=[-0.5, 9.5, -0.5, 9.5], zorder=0)
+            ax.imshow(img, extent=[-0.5, 9.5, 9.5, -0.5], zorder=0)
         except Exception:
             pass
 
