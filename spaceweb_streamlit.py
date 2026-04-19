@@ -481,16 +481,18 @@ def disegna_griglia_cockpit():
         import matplotlib.image as mpimg
         try:
             img = mpimg.imread(bg_path)
-            # Center-crop a quadrato: l'immagine è 1152×925 (più larga che alta).
-            # Tagliamo simmetricamente sin/dx per avere 925×925 senza distorsioni.
-            # Le linee di griglia dell'immagine restano uniformi dopo il crop.
-            h, w = img.shape[:2]
-            s = min(h, w)
-            x0 = (w - s) // 2
-            img_sq = img[:s, x0:x0 + s]
-            ax.imshow(img_sq, extent=[-0.5, 9.5, 9.5, -0.5], zorder=0)
+            # Immagine completa (non croppata): l'extent [-0.5,9.5] mappa
+            # le posizioni di gioco 0-9 esattamente sui marcatori visivi dell'immagine.
+            # Il crop rompeva questo allineamento.
+            ax.imshow(img, extent=[-0.5, 9.5, 9.5, -0.5], aspect='auto', zorder=0)
         except Exception:
             pass
+
+    # Griglia agli interi 0-9: i game elements (scatter) cadono
+    # sulle INTERSEZIONI delle linee (non nei centri delle celle).
+    for i in range(10):
+        ax.axhline(i, color='#1a3050', linewidth=0.5, alpha=0.55, zorder=1)
+        ax.axvline(i, color='#1a3050', linewidth=0.5, alpha=0.55, zorder=1)
 
     ax.set_xticks([]); ax.set_yticks([])
 
@@ -862,7 +864,7 @@ def schermata_gioco():
     with col_mappa:
         st.markdown('<div class="section-title">🌌 VISTA SETTORE SOTTOSPAZIO</div>', unsafe_allow_html=True)
         buf = disegna_griglia_cockpit()
-        st.image(buf, width='stretch')
+        st.image(buf, use_container_width=True)
         
         # (event log spostato in col_status → COMUNICAZIONI DA STARFLEET)
 

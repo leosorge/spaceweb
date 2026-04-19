@@ -1,133 +1,112 @@
 # suoni.py
-# Gestione effetti sonori Web Audio per Space Web
-import streamlit as st
-import base64 as _b64
+# Gestione effetti sonori per Space Web — audio generato in Python (numpy/wave)
+# Usa st.audio(autoplay=True): nessun JavaScript, nessun iframe, nessun problema CSP.
 
-def _js_iframe(html: str):
+import numpy as np
+import io
+import wave
+import base64
+import streamlit as st
+
+
+def _gen_wav(freq: float, dur: float, vol: float,
+             wave_type: str = 'sine', sr: int = 22050) -> bytes:
+    """Genera dati WAV mono 16-bit con inviluppo esponenziale."""
+    n = int(sr * dur)
+    t = np.linspace(0, dur, n, endpoint=False)
+
+    if wave_type == 'sine':
+        sig = np.sin(2 * np.pi * freq * t)
+    elif wave_type == 'square':
+        sig = np.sign(np.sin(2 * np.pi * freq * t))
+    elif wave_type == 'sawtooth':
+        sig = 2 * (t * freq % 1) - 1
+    else:
+        sig = np.sin(2 * np.pi * freq * t)
+
+    env = np.exp(-3.0 * t / max(dur, 0.01))
+    samples = (sig * env * vol * 32767).astype(np.int16)
+
+    buf = io.BytesIO()
+    with wave.open(buf, 'wb') as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(sr)
+        w.writeframes(samples.tobytes())
+    return buf.getvalue()
+
+
+def _gen_noise(dur: float, vol: float, sr: int = 22050) -> bytes:
+    """Genera rumore bianco (esplosione/tempesta)."""
+    n = int(sr * dur)
+    t = np.linspace(0, dur, n, endpoint=False)
+    noise = np.random.uniform(-1, 1, n)
+    env = np.exp(-4.0 * t / max(dur, 0.01))
+    samples = (noise * env * vol * 32767).astype(np.int16)
+    buf = io.BytesIO()
+    with wave.open(buf, 'wb') as w:
+        w.setnchannels(1); w.setsampwidth(2); w.setframerate(sr)
+        w.writeframes(samples.tobytes())
+    return buf.getvalue()
+
+
+def _play(wav_bytes: bytes):
+    """Inietta un elemento <audio autoplay hidden> via st.markdown.
+    DOMPurify consente <audio src='data:audio/wav;base64,...'> (audio è in ADD_DATA_URI_TAGS).
+    Non mostra controlli visibili.
     """
-    Inietta HTML+JS in un iframe via data URI.
-    st.iframe con HTML grezzo viene sanitizzato da DOMPurify che rimuove <script>.
-    Il data URI bypassa la sanitizzazione, il JavaScript viene eseguito normalmente.
-    """
-    b64 = _b64.b64encode(html.encode("utf-8")).decode("utf-8")
-    st.iframe(f"data:text/html;base64,{b64}", height=1)
+    b64 = base64.b64encode(wav_bytes).decode()
+    st.markdown(
+        f'<audio autoplay style="display:none" '
+        f'src="data:audio/wav;base64,{b64}"></audio>',
+        unsafe_allow_html=True
+    )
 
 
 def play_sound_event(event: str):
-    """Suona un breve effetto Web Audio in base al tipo di evento."""
+    """Suona un effetto in base al tipo di evento di gioco."""
     if not event:
         return
 
-    # ── Crepitio tempesta: preavviso (10s, volume normale) ───────────────
     if event == "alert":
-        _js_iframe("""
-        <script>
-        (function(){
-          try {
-            const ac = new (window.AudioContext || window.webkitAudioContext)();
-            ac.resume().then(() => {
-              const vol = 0.30;
-              function crackle(t0, len) {
-                const buf = ac.createBuffer(1, Math.floor(ac.sampleRate * len), ac.sampleRate);
-                const data = buf.getChannelData(0);
-                for (let i = 0; i < data.length; i++) {
-                  data[i] = Math.random() < 0.05 ? (Math.random()*2-1) : 0;
-                }
-                const src = ac.createBufferSource();
-                const g   = ac.createGain();
-                src.buffer = buf;
-                g.gain.setValueAtTime(0.0001, t0);
-                g.gain.linearRampToValueAtTime(vol, t0 + 0.05);
-                g.gain.setValueAtTime(vol, t0 + len - 0.3);
-                g.gain.linearRampToValueAtTime(0.0001, t0 + len);
-                src.connect(g); g.connect(ac.destination);
-                src.start(t0); src.stop(t0 + len);
-              }
-              let t = ac.currentTime;
-              for (let i = 0; i < 20; i++) { crackle(t, 0.35); t += 0.5; }
-              const osc = ac.createOscillator();
-              const og  = ac.createGain();
-              osc.type = "sawtooth"; osc.frequency.value = 55;
-              og.gain.setValueAtTime(0.0001, ac.currentTime);
-              og.gain.linearRampToValueAtTime(0.12, ac.currentTime + 0.5);
-              og.gain.setValueAtTime(0.12, ac.currentTime + 9.0);
-              og.gain.linearRampToValueAtTime(0.0001, ac.currentTime + 10.0);
-              osc.connect(og); og.connect(ac.destination);
-              osc.start(ac.currentTime); osc.stop(ac.currentTime + 10.0);
-            });
-          } catch(e) { console.warn("audio error", e); }
-        })();
-        </script>""")
+        # Sirena: due toni alternati
+        t = np.linspace(0, 1.2, int(22050 * 1.2), endpoint=False)
+        freq_mod = 200 + 100 * np.sign(np.sin(2 * np.pi * 2 * t))
+        sig = np.sin(2 * np.pi * freq_mod * t)
+        env = np.exp(-1.5 * t / 1.2)
+        samples = (sig * env * 0.3 * 32767).astype(np.int16)
+        buf = io.BytesIO()
+        with wave.open(buf, 'wb') as w:
+            w.setnchannels(1); w.setsampwidth(2); w.setframerate(22050)
+            w.writeframes(samples.tobytes())
+        _play(buf.getvalue())
         return
 
-    # ── Crepitio tempesta: nave colpita (volume doppio, 3s) ──────────────
     if event == "explosion":
-        _js_iframe("""
-        <script>
-        (function(){
-          try {
-            const ac = new (window.AudioContext || window.webkitAudioContext)();
-            ac.resume().then(() => {
-              const vol = 0.60;
-              function crackle(t0, len) {
-                const buf = ac.createBuffer(1, Math.floor(ac.sampleRate * len), ac.sampleRate);
-                const data = buf.getChannelData(0);
-                for (let i = 0; i < data.length; i++) {
-                  data[i] = Math.random() < 0.15 ? (Math.random()*2-1) : 0;
-                }
-                const src = ac.createBufferSource();
-                const g   = ac.createGain();
-                src.buffer = buf;
-                g.gain.setValueAtTime(vol, t0);
-                g.gain.linearRampToValueAtTime(0.0001, t0 + len);
-                src.connect(g); g.connect(ac.destination);
-                src.start(t0); src.stop(t0 + len);
-              }
-              let t = ac.currentTime;
-              for (let i = 0; i < 6; i++) { crackle(t, 0.4); t += 0.5; }
-              const osc = ac.createOscillator();
-              const og  = ac.createGain();
-              osc.type = "sawtooth";
-              osc.frequency.setValueAtTime(120, ac.currentTime);
-              osc.frequency.exponentialRampToValueAtTime(30, ac.currentTime + 2.5);
-              og.gain.setValueAtTime(0.0001, ac.currentTime);
-              og.gain.linearRampToValueAtTime(0.65, ac.currentTime + 0.05);
-              og.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + 3.0);
-              osc.connect(og); og.connect(ac.destination);
-              osc.start(ac.currentTime); osc.stop(ac.currentTime + 3.0);
-            });
-          } catch(e) { console.warn("audio error", e); }
-        })();
-        </script>""")
+        # Mix: rumore + basso sawtooth
+        noise = _gen_noise(0.8, 0.5)
+        tone  = _gen_wav(70, 0.8, 0.4, 'sawtooth')
+        # Somma le due tracce
+        n1 = np.frombuffer(noise[44:], dtype=np.int16).astype(np.float32)
+        n2 = np.frombuffer(tone[44:],  dtype=np.int16).astype(np.float32)
+        length = min(len(n1), len(n2))
+        mixed = np.clip(n1[:length] + n2[:length], -32767, 32767).astype(np.int16)
+        buf = io.BytesIO()
+        with wave.open(buf, 'wb') as w:
+            w.setnchannels(1); w.setsampwidth(2); w.setframerate(22050)
+            w.writeframes(mixed.tobytes())
+        _play(buf.getvalue())
         return
 
-    # ── Suoni brevi standard ─────────────────────────────────────────────
     sound_map = {
-        "bonus":    ("sine",     880, 0.18, 0.55),
-        "danger":   ("sawtooth", 180, 0.30, 0.60),
-        "warn":     ("square",   440, 0.15, 0.45),
-        "stealth":  ("sine",     220, 0.25, 0.40),
-        "gameover": ("sawtooth",  80, 0.60, 0.70),
-        "victory":  ("sine",    1047, 0.50, 0.60),
+        "bonus":    ('sine',      880, 0.20, 0.55),
+        "danger":   ('sawtooth',  180, 0.30, 0.55),
+        "warn":     ('square',    440, 0.15, 0.45),
+        "stealth":  ('sine',      220, 0.20, 0.40),
+        "gameover": ('sawtooth',   60, 0.55, 0.80),
+        "victory":  ('sine',     1047, 0.35, 0.70),
     }
     if event not in sound_map:
         return
-    wave, freq, dur, vol = sound_map[event]
-    _js_iframe(f"""
-    <script>
-    (function(){{
-      try {{
-        const ac = new (window.AudioContext || window.webkitAudioContext)();
-        ac.resume().then(() => {{
-          const o = ac.createOscillator();
-          const g = ac.createGain();
-          o.type = "{wave}";
-          o.frequency.value = {freq};
-          g.gain.setValueAtTime({vol}, ac.currentTime);
-          g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + {dur});
-          o.connect(g); g.connect(ac.destination);
-          o.start(); o.stop(ac.currentTime + {dur});
-        }});
-      }} catch(e) {{ console.warn("audio error", e); }}
-    }})();
-    </script>""")
+    wt, freq, vol, dur = sound_map[event]
+    _play(_gen_wav(freq, dur, vol, wt))
