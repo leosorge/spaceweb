@@ -21,30 +21,28 @@ Il gioco integra anche un sistema di **quiz didattici** su tre temi:
 ## 🎮 Come si gioca
 
 | Elemento | Effetto |
-|---|---|
+|----------|---------|
 | 🔴 Ostacolo | -20 energia |
 | 🟢 Bonus | +20 energia |
 | ⚫ Stealth | -15 energia |
-| 🔵 Arrivo (9,9) | **VITTORIA** |
+| 🔵 Arrivo (9,9) | VITTORIA |
 | 🔴 Nave nemica | -30 energia se ti raggiunge |
 | 💗 Esplosione | -w/2 energia se sei in zona |
 
-Il **costo di ogni mossa** è `dx² + dy²` — più ti muovi lontano, più consumi energia.
-
+Il costo di ogni mossa è `dx² + dy²` — più ti muovi lontano, più consumi energia.
 La nave nemica si muove casualmente ad ogni tua mossa e ogni 4 mosse si teletrasporta in una posizione casuale.
-
-Quando l'energia scende sotto 50, puoi fare un **quiz** per recuperarla (+2 per ogni risposta corretta, fino a +10).
+Quando l'energia scende sotto 50, puoi fare un quiz per recuperarla (+2 per ogni risposta corretta, fino a +10).
 
 ---
 
 ## 🗂️ Struttura del progetto
 
 ```
-spaceweb_streamlit.py     # App principale Streamlit
-requirements.txt          # Dipendenze Python
-p_background.png          # Immagine di sfondo della griglia
-q_title.png               # Testata grafica Space Web
-README.md                 # Questo file
+spaceweb_streamlit.py  # App principale Streamlit
+requirements.txt       # Dipendenze Python
+p_background.png       # Immagine di sfondo della griglia
+q_title.png            # Testata grafica Space Web
+README.md              # Questo file
 ```
 
 ---
@@ -53,7 +51,7 @@ README.md                 # Questo file
 
 ```bash
 # Clona il repo
-git clone https://github.com/tuo-utente/spaceweb.git
+git clone https://github.com/leosorge/spaceweb.git
 cd spaceweb
 
 # Installa le dipendenze
@@ -65,42 +63,37 @@ streamlit run spaceweb_streamlit.py
 
 ---
 
-## ☁️ Deploy su Koyeb
+## ☁️ Deploy su Streamlit Cloud
 
 1. Fai push del repo su GitHub
-2. Crea un nuovo servizio su [koyeb.com](https://koyeb.com) collegandolo al repo
-3. Imposta le variabili d'ambiente:
+2. Vai su [share.streamlit.io](https://share.streamlit.io) e accedi con il tuo account GitHub
+3. Clicca **New app** e seleziona il repo `spaceweb`, branch `main`, file `spaceweb_streamlit.py`
+4. Nella sezione **Advanced settings → Secrets**, aggiungi:
 
-```
-SUPABASE_URL = https://xxxx.supabase.co
-SUPABASE_KEY = la-tua-publishable-key
+```toml
+SUPABASE_URL = "https://xxxx.supabase.co"
+SUPABASE_KEY = "la-tua-publishable-key"
 ```
 
-4. Imposta il **run command**:
-
-```
-streamlit run spaceweb_streamlit.py --server.port=8000 --server.address=0.0.0.0
-```
+5. Clicca **Deploy**
 
 ---
 
 ## 🗄️ Database — Supabase
 
-Il database utenti è ospitato su [Supabase](https://supabase.com) (PostgreSQL).
-Per inizializzarlo, esegui questa SQL nell'editor di Supabase:
+Il database utenti è ospitato su Supabase (PostgreSQL). Per inizializzarlo, esegui questa SQL nell'editor di Supabase:
 
 ```sql
 CREATE TABLE utenti (
-    nome TEXT PRIMARY KEY,
-    data1 TEXT DEFAULT '00/00/00',
-    punteggio1 INTEGER DEFAULT 0,
-    data2 TEXT DEFAULT '00/00/00',
-    punteggio2 INTEGER DEFAULT 0,
-    data3 TEXT DEFAULT '00/00/00',
-    punteggio3 INTEGER DEFAULT 0,
-    ww INTEGER DEFAULT 0
+  nome TEXT PRIMARY KEY,
+  data1 TEXT DEFAULT '00/00/00',
+  punteggio1 INTEGER DEFAULT 0,
+  data2 TEXT DEFAULT '00/00/00',
+  punteggio2 INTEGER DEFAULT 0,
+  data3 TEXT DEFAULT '00/00/00',
+  punteggio3 INTEGER DEFAULT 0,
+  ww INTEGER DEFAULT 0
 );
-
 INSERT INTO utenti (nome) VALUES ('xyx');
 ```
 
@@ -110,7 +103,7 @@ Il campo `ww` è la somma dei tre punteggi quiz ed è la classifica finale del g
 
 ## 🌌 Oracolo Cosmico
 
-Ogni 3 mosse il gioco interroga il modello **qwen3-8b** via [Regolo AI](https://regolo.ai) e genera una frase cosmica nello stile di Douglas Adams. L'Oracolo appare nel pannello di destra sotto i controlli.
+Ogni 3 mosse il gioco interroga il modello `qwen3-8b` via **Regolo AI** e genera una frase cosmica nello stile di Douglas Adams. L'Oracolo appare nel pannello di destra sotto i controlli.
 
 ---
 
@@ -122,11 +115,10 @@ Digita `adm` come nome utente per accedere al pannello amministratore e visualiz
 
 ## 🛠️ Tecnologie
 
-- [Streamlit](https://streamlit.io) — interfaccia web
+- [Streamlit](https://streamlit.io) — interfaccia web e hosting
 - [Matplotlib](https://matplotlib.org) — rendering della griglia
 - [Supabase](https://supabase.com) — database PostgreSQL cloud
 - [Regolo AI](https://regolo.ai) — LLM per l'Oracolo Cosmico
-- [Koyeb](https://koyeb.com) — hosting cloud
 
 ---
 
